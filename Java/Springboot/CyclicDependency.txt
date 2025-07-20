@@ -1,0 +1,140 @@
+Cyclic dependency occurs when two or more beans in a Spring application depend on each other, creating a circular reference. 
+This situation can lead to problems during bean initialization, as Spring's IoC container cannot resolve the dependencies.
+
+### How Cyclic Dependency Works
+
+In Spring, cyclic dependencies can manifest in two primary forms:
+
+1. **Constructor-based cyclic dependency**: Both beans declare their dependencies through constructors.
+2. **Setter-based cyclic dependency**: Beans reference each other via setter methods.
+
+### Example of Cyclic Dependency
+
+Let's create an example to demonstrate cyclic dependency using both constructor and setter injection.
+
+#### Step 1: Create Two Classes
+
+We'll create two classes, `ClassA` and `ClassB`, where `ClassA` depends on `ClassB`, and `ClassB` depends on `ClassA`.
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+// Class A
+@Component
+public class ClassA {
+    private final ClassB classB;
+
+    @Autowired
+    public ClassA(ClassB classB) {
+        this.classB = classB;
+    }
+
+    public void doSomething() {
+        System.out.println("ClassA is doing something and calling ClassB...");
+        classB.doSomethingElse();
+    }
+}
+
+// Class B
+@Component
+public class ClassB {
+    private final ClassA classA;
+
+    @Autowired
+    public ClassB(ClassA classA) {
+        this.classA = classA;
+    }
+
+    public void doSomethingElse() {
+        System.out.println("ClassB is doing something else and calling ClassA...");
+        classA.doSomething();
+    }
+}
+```
+
+### Step 2: Main Application Class
+
+Now, create a main application class to run the Spring Boot application.
+
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
+
+@SpringBootApplication
+public class MyApplication {
+    public static void main(String[] args) {
+        ApplicationContext context = SpringApplication.run(MyApplication.class, args);
+
+        // Get ClassA bean and trigger method to demonstrate cyclic dependency
+        ClassA classA = context.getBean(ClassA.class);
+        classA.doSomething();
+    }
+}
+```
+
+### Expected Behavior
+
+When you run this application, you will encounter a `BeanCurrentlyInCreationException` indicating that the Spring container cannot create a bean because it is already in creation, leading to a cyclic dependency.
+
+### Resolving Cyclic Dependency
+
+1. **Use Setter Injection**: One way to resolve cyclic dependencies is to use setter injection instead of constructor injection. This allows Spring to create the beans first and inject dependencies later.
+
+**Revised Example Using Setter Injection**:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+// Class A
+@Component
+public class ClassA {
+    private ClassB classB;
+
+    @Autowired
+    public void setClassB(ClassB classB) {
+        this.classB = classB;
+    }
+
+    public void doSomething() {
+        System.out.println("ClassA is doing something and calling ClassB...");
+        classB.doSomethingElse();
+    }
+}
+
+// Class B
+@Component
+public class ClassB {
+    private ClassA classA;
+
+    @Autowired
+    public void setClassA(ClassA classA) {
+        this.classA = classA;
+    }
+
+    public void doSomethingElse() {
+        System.out.println("ClassB is doing something else and calling ClassA...");
+        classA.doSomething();
+    }
+}
+```
+
+### Step 3: Test the Application Again
+
+Now, run the application again with the revised code. You should see the following output without any exceptions:
+
+```
+ClassA is doing something and calling ClassB...
+ClassB is doing something else and calling ClassA...
+ClassA is doing something and calling ClassB...
+...
+```
+
+### Conclusion
+
+Cyclic dependencies can lead to issues during bean initialization in Spring. 
+Using setter injection is one common way to resolve these cyclic references. 
+However, it’s generally advisable to avoid cyclic dependencies altogether by rethinking the design of your classes. 
+Strategies such as introducing a third component to manage interactions or using event-driven architecture can help mitigate cyclic dependencies and promote cleaner code structure.

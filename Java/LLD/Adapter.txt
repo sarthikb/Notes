@@ -1,0 +1,167 @@
+Great choice! Let's walk through the **Adapter Design Pattern** using a **real-world scenario**: adapting a **Micro USB device** to work with a **USB-C port**.
+
+---
+
+## 🔌 Scenario: USB-C and Micro-USB
+
+You have a modern laptop with only **USB-C ports**. But you want to use an older device (like a phone or charger) that only supports **Micro USB**. To connect them, you use a **USB-C to Micro-USB Adapter**.
+
+---
+
+## ✅ Objective
+
+Use the **Adapter Pattern** to let a system expecting a **USB-C device** work with a **Micro-USB device**.
+
+---
+
+## 🔧 Classes Overview
+
+### 1. `UsbC`
+
+* **Target interface**
+* What the system expects
+
+### 2. `MicroUsb`
+
+* **Adaptee**
+* Existing incompatible interface
+
+### 3. `UsbCToMicroUsbAdapter`
+
+* **Adapter**
+* Converts `MicroUsb` interface into `UsbC`
+
+---
+
+## 🧱 Class Diagram
+
+```
+           +-----------------+               +----------------------+
+           |     UsbC        | <----------+  | UsbCToMicroUsbAdapter|
+           |-----------------| implements |  |----------------------|
+           | + connectUsbC() |             |  | + connectUsbC()      |
+           +-----------------+             |  | - microUsbDevice     |
+                                           |  +----------------------+
+                                           |
+                                           v
+                                 +------------------+
+                                 |    MicroUsb      |
+                                 |------------------|
+                                 | + connectMicroUsb()|
+                                 +------------------+
+```
+
+---
+
+## ✅ Java Implementation
+
+### 1. Target Interface: `UsbC`
+
+```java
+public interface UsbC {
+    void connectUsbC();
+}
+```
+
+---
+
+### 2. Adaptee: `MicroUsb`
+
+```java
+public class MicroUsb {
+    public void connectMicroUsb() {
+        System.out.println("Connected using Micro USB.");
+    }
+}
+```
+
+---
+
+### 3. Adapter: `UsbCToMicroUsbAdapter`
+
+```java
+public class UsbCToMicroUsbAdapter implements UsbC {
+
+    private MicroUsb microUsbDevice;
+
+    public UsbCToMicroUsbAdapter(MicroUsb microUsbDevice) {
+        this.microUsbDevice = microUsbDevice;
+    }
+
+    @Override
+    public void connectUsbC() {
+        System.out.println("Adapter converts USB-C to Micro USB...");
+        microUsbDevice.connectMicroUsb();
+    }
+}
+```
+
+---
+
+### 4. Client Code (e.g., Laptop)
+
+```java
+public class Laptop {
+    private UsbC port;
+
+    public Laptop(UsbC port) {
+        this.port = port;
+    }
+
+    public void plugInDevice() {
+        System.out.println("Laptop trying to connect to device...");
+        port.connectUsbC();
+    }
+}
+```
+
+---
+
+### 5. Test the Adapter
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        MicroUsb oldPhone = new MicroUsb();
+
+        // Use Adapter to connect MicroUsb device to a UsbC port
+        UsbC adapter = new UsbCToMicroUsbAdapter(oldPhone);
+
+        Laptop laptop = new Laptop(adapter);
+        laptop.plugInDevice();
+    }
+}
+```
+
+---
+
+### 🧾 Output
+
+```
+Laptop trying to connect to device...
+Adapter converts USB-C to Micro USB...
+Connected using Micro USB.
+```
+
+---
+
+## ✅ Key Takeaways
+
+| Concept          | Role in Example         |
+| ---------------- | ----------------------- |
+| Target Interface | `UsbC`                  |
+| Adaptee          | `MicroUsb`              |
+| Adapter          | `UsbCToMicroUsbAdapter` |
+| Client           | `Laptop`                |
+
+---
+
+## ✅ Why This Follows SOLID
+
+* **Single Responsibility Principle**: Each class has one responsibility (adapter adapts, MicroUsb connects, etc.).
+* **Open/Closed Principle**: You can add support for new types (e.g., Lightning port) by creating new adapters.
+* **Interface Segregation Principle**: Each interface is small and focused (`UsbC`, `MicroUsb`).
+
+---
+
+Would you like the class diagram as an image or want to see how this could extend to multiple types of connectors (e.g., Lightning, HDMI, etc.)?

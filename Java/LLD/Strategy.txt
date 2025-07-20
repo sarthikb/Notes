@@ -1,0 +1,177 @@
+### **Strategy Design Pattern**
+
+The **Strategy Pattern** is a **behavioral design pattern** that defines a family of algorithms, encapsulates each one, and makes them interchangeable. It allows the **algorithm** to be selected at runtime depending on the context, without changing the code that uses the algorithm.
+
+In simple terms, the **Strategy Pattern** enables a class to change its behavior at runtime by using different strategies. It helps avoid conditional statements (like `if` or `switch`) that choose between algorithms.
+
+### **Intent**
+- **Encapsulate** a family of algorithms.
+- **Make them interchangeable** without changing the code that uses them.
+- The **client code** doesn’t need to know which algorithm is being used.
+
+### **Real-Life Example: Payment Methods in an Online Store**
+
+Imagine you're building an online store where customers can pay for their purchases using different methods like **Credit Card**, **PayPal**, or **Bitcoin**. Depending on the method selected by the user, the payment processing logic can vary.
+
+The **Strategy Pattern** allows you to **decouple** the payment processing logic from the store's checkout process. You can easily add or modify payment methods without changing the core checkout process.
+
+### **Components of the Strategy Pattern**
+
+1. **Context**: The class that uses the strategy.
+2. **Strategy**: The common interface for all strategies.
+3. **Concrete Strategies**: The classes that implement the different algorithms (strategies).
+
+### **Class Diagram**
+```
++-----------------+
+|     Context     |
++-----------------+
+| - strategy      |
+| + setStrategy() |
+| + processPayment()|
++-----------------+
+        ^
+        |
++------------------+        +------------------+        +-----------------+
+|  PaymentStrategy | <------ | CreditCardPayment |      | PayPalPayment  |
++------------------+        +------------------+        +-----------------+
+| + pay()          |        | + pay()          |        | + pay()         |
++------------------+        +------------------+        +-----------------+
+```
+
+### **Step-by-Step Example**: Strategy Pattern for Payment Methods
+
+#### 1. **Define the Strategy Interface**:
+This interface declares a `pay()` method, which will be implemented by all concrete strategies (like `CreditCardPayment`, `PayPalPayment`, etc.).
+
+```java
+// The Strategy Interface
+public interface PaymentStrategy {
+    void pay(double amount);
+}
+```
+
+#### 2. **Concrete Strategy Classes**:
+These are the various implementations of the `PaymentStrategy` interface, each representing a different payment method.
+
+```java
+// Concrete Strategy: Credit Card Payment
+public class CreditCardPayment implements PaymentStrategy {
+    private String cardNumber;
+
+    public CreditCardPayment(String cardNumber) {
+        this.cardNumber = cardNumber;
+    }
+
+    @Override
+    public void pay(double amount) {
+        System.out.println("Processing payment of " + amount + " using Credit Card: " + cardNumber);
+    }
+}
+
+// Concrete Strategy: PayPal Payment
+public class PayPalPayment implements PaymentStrategy {
+    private String email;
+
+    public PayPalPayment(String email) {
+        this.email = email;
+    }
+
+    @Override
+    public void pay(double amount) {
+        System.out.println("Processing payment of " + amount + " using PayPal account: " + email);
+    }
+}
+
+// Concrete Strategy: Bitcoin Payment
+public class BitcoinPayment implements PaymentStrategy {
+    private String bitcoinAddress;
+
+    public BitcoinPayment(String bitcoinAddress) {
+        this.bitcoinAddress = bitcoinAddress;
+    }
+
+    @Override
+    public void pay(double amount) {
+        System.out.println("Processing payment of " + amount + " using Bitcoin address: " + bitcoinAddress);
+    }
+}
+```
+
+#### 3. **Context Class**:
+The `Checkout` class acts as the context, which will use different strategies to process payments. It has a `setPaymentStrategy()` method to switch between different strategies at runtime.
+
+```java
+// Context Class: Checkout (uses the Strategy)
+public class Checkout {
+    private PaymentStrategy paymentStrategy;
+
+    // Set the payment strategy (can be changed dynamically)
+    public void setPaymentStrategy(PaymentStrategy paymentStrategy) {
+        this.paymentStrategy = paymentStrategy;
+    }
+
+    // Process the payment using the current strategy
+    public void processPayment(double amount) {
+        if (paymentStrategy == null) {
+            System.out.println("Payment method not selected!");
+            return;
+        }
+        paymentStrategy.pay(amount);
+    }
+}
+```
+
+#### 4. **Client Code**:
+The client code will use the `Checkout` class and dynamically choose the payment strategy based on user selection.
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        Checkout checkout = new Checkout();
+
+        // Choose Credit Card payment
+        PaymentStrategy creditCardPayment = new CreditCardPayment("1234-5678-9876-5432");
+        checkout.setPaymentStrategy(creditCardPayment);
+        checkout.processPayment(100.0);  // Payment processed using Credit Card
+
+        // Choose PayPal payment
+        PaymentStrategy paypalPayment = new PayPalPayment("user@example.com");
+        checkout.setPaymentStrategy(paypalPayment);
+        checkout.processPayment(50.0);  // Payment processed using PayPal
+
+        // Choose Bitcoin payment
+        PaymentStrategy bitcoinPayment = new BitcoinPayment("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
+        checkout.setPaymentStrategy(bitcoinPayment);
+        checkout.processPayment(200.0);  // Payment processed using Bitcoin
+    }
+}
+```
+
+### **Output**:
+```
+Processing payment of 100.0 using Credit Card: 1234-5678-9876-5432
+Processing payment of 50.0 using PayPal account: user@example.com
+Processing payment of 200.0 using Bitcoin address: 1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+```
+
+### **Explanation of the Example**:
+
+- **PaymentStrategy** is the **Strategy interface**. It defines the `pay(double amount)` method that all concrete strategies must implement.
+- **CreditCardPayment**, **PayPalPayment**, and **BitcoinPayment** are **concrete strategies** that implement the `PaymentStrategy` interface. Each class provides a specific implementation of how to process a payment using the respective method.
+- **Checkout** is the **context** that uses a `PaymentStrategy` to perform the payment. The strategy is set at runtime using the `setPaymentStrategy()` method.
+- In the **client code** (`Main` class), the user can select a payment method, and the `Checkout` class processes the payment accordingly.
+
+### **Advantages of the Strategy Pattern**:
+1. **Open for Extension**: You can add new payment methods (or other strategies) by creating new classes that implement the `PaymentStrategy` interface, without modifying the `Checkout` class.
+2. **Closed for Modification**: The existing code in `Checkout` or other parts of the system doesn't need to change when you add a new strategy.
+3. **Avoids Conditional Logic**: Instead of using a lot of `if` or `switch` statements to choose the payment method, the strategy pattern allows the algorithm to be selected dynamically based on the strategy.
+4. **Improved Maintainability**: If you need to change the logic of a particular payment method (like adding more validation to PayPal), you can do so in its own class without affecting the other classes.
+
+### **When to Use the Strategy Pattern**:
+- When you have multiple algorithms for a specific task, and you want to make the choice of algorithm flexible.
+- When you want to encapsulate each algorithm in its own class and make them interchangeable at runtime.
+- When you need to avoid using multiple `if/else` or `switch` statements to choose between algorithms.
+
+### **Conclusion**:
+The **Strategy Pattern** provides an elegant solution for managing different algorithms or behaviors in a system. By defining a **family of interchangeable algorithms** and encapsulating them in separate classes, the strategy pattern allows you to change the behavior of a class without modifying its code. This improves flexibility, maintainability, and extensibility in your application.

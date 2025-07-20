@@ -1,0 +1,189 @@
+You raise a valid point! While it's functional to set the `nextHandler` from the client, this approach could expose unnecessary implementation details to the client and potentially violate the **encapsulation** principle, as the client is now responsible for setting up the chain.
+
+### **Improvement**: **Encapsulate the Chain Construction**
+
+In a more refined approach, the **chain construction** (i.e., the linking of handlers) should ideally be done inside the **Chain of Responsibility** pattern itself, not by the client. This way, the client is only responsible for triggering the process, not setting up the chain. This design improves **encapsulation**, **maintainability**, and reduces the risk of misconfigurations in the chain.
+
+To improve this, we can **build a chain of handlers** inside a **`LogProcessor`** (or a similar class) that sets up the sequence of handlers internally. The client simply invokes the logging method on the `LogProcessor`, without worrying about the order of the handlers.
+
+### **Improved Solution:**
+
+Here is how you can refactor the implementation:
+
+---
+
+### Step 1: **LogHandler (Abstract Handler)**
+
+This part remains unchanged. The `LogHandler` is still the base class for all concrete handlers.
+
+```java
+public abstract class LogHandler {
+    protected LogHandler nextHandler;
+
+    public abstract void handleLog(String message, String logLevel);
+
+    public void setNextHandler(LogHandler nextHandler) {
+        this.nextHandler = nextHandler;
+    }
+}
+```
+
+### Step 2: **Concrete Handlers**
+
+These remain the same as before. Each concrete handler checks if it can handle the log level; if not, it passes the request to the next handler.
+
+```java
+public class InfoLogHandler extends LogHandler {
+    @Override
+    public void handleLog(String message, String logLevel) {
+        if (logLevel.equalsIgnoreCase("INFO")) {
+            System.out.println("INFO: " + message);
+        } else if (nextHandler != null) {
+            nextHandler.handleLog(message, logLevel);
+        }
+    }
+}
+
+public class DebugLogHandler extends LogHandler {
+    @Override
+    public void handleLog(String message, String logLevel) {
+        if (logLevel.equalsIgnoreCase("DEBUG")) {
+            System.out.println("DEBUG: " + message);
+        } else if (nextHandler != null) {
+            nextHandler.handleLog(message, logLevel);
+        }
+    }
+}
+
+public class ErrorLogHandler extends LogHandler {
+    @Override
+    public void handleLog(String message, String logLevel) {
+        if (logLevel.equalsIgnoreCase("ERROR")) {
+            System.out.println("ERROR: " + message);
+        } else if (nextHandler != null) {
+            nextHandler.handleLog(message, logLevel);
+        }
+    }
+}
+
+public class WarningLogHandler extends LogHandler {
+    @Override
+    public void handleLog(String message, String logLevel) {
+        if (logLevel.equalsIgnoreCase("WARNING")) {
+            System.out.println("WARNING: " + message);
+        } else if (nextHandler != null) {
+            nextHandler.handleLog(message, logLevel);
+        }
+    }
+}
+```
+
+### Step 3: **LogProcessor (Chain Setup & Processing)**
+
+This is where we **encapsulate** the chain creation. The `LogProcessor` class will set up the chain internally and allow the client to interact only with it, without worrying about the handler setup.
+
+```java
+public class LogProcessor {
+    private LogHandler chain;
+
+    public LogProcessor() {
+        // Build the chain inside the LogProcessor class
+        LogHandler infoHandler = new InfoLogHandler();
+        LogHandler debugHandler = new DebugLogHandler();
+        LogHandler warningHandler = new WarningLogHandler();
+        LogHandler errorHandler = new ErrorLogHandler();
+
+        // Set up the chain of responsibility
+        infoHandler.setNextHandler(debugHandler);
+        debugHandler.setNextHandler(warningHandler);
+        warningHandler.setNextHandler(errorHandler);
+
+        // Store the first handler in the chain
+        this.chain = infoHandler;
+    }
+
+    // Process the log message through the chain
+    public void processLog(String message, String logLevel) {
+        chain.handleLog(message, logLevel);
+    }
+}
+```
+
+### Step 4: **Client Code**
+
+Now, the client doesn't need to worry about constructing or configuring the chain. The `LogProcessor` takes care of that.
+
+```java
+public class ChainOfResponsibilityExample {
+    public static void main(String[] args) {
+        LogProcessor logProcessor = new LogProcessor();
+
+        // Test: Log messages with different levels
+        System.out.println("Logging INFO message:");
+        logProcessor.processLog("This is an info message.", "INFO");
+
+        System.out.println("\nLogging DEBUG message:");
+        logProcessor.processLog("This is a debug message.", "DEBUG");
+
+        System.out.println("\nLogging WARNING message:");
+        logProcessor.processLog("This is a warning message.", "WARNING");
+
+        System.out.println("\nLogging ERROR message:");
+        logProcessor.processLog("This is an error message.", "ERROR");
+    }
+}
+```
+
+#### **Output:**
+```
+Logging INFO message:
+INFO: This is an info message.
+
+Logging DEBUG message:
+DEBUG: This is a debug message.
+
+Logging WARNING message:
+WARNING: This is a warning message.
+
+Logging ERROR message:
+ERROR: This is an error message.
+```
+
+### **Explanation:**
+
+1. **LogHandler Class**: 
+   - The `LogHandler` class remains the same, defining the method `handleLog` and the reference to `nextHandler`.
+   - The `setNextHandler` method links the handlers together in a chain, but this is now done within the `LogProcessor` class (not by the client).
+
+2. **Concrete Handlers**:
+   - Each concrete handler (`InfoLogHandler`, `DebugLogHandler`, etc.) implements the logic for processing specific log levels and passes the request to the next handler if it can't handle it.
+
+3. **LogProcessor Class**:
+   - The `LogProcessor` class is now responsible for setting up the chain of responsibility by linking the handlers together. It encapsulates the chain-building logic, so the client doesn't need to worry about the sequence.
+   - The `processLog` method is the main entry point for the client, which simply invokes `handleLog` on the first handler in the chain. The rest of the chain handling is done internally.
+
+4. **Client Code**:
+   - The client code is simplified, as it only needs to interact with the `LogProcessor` to log messages. The setup of the chain is hidden from the client.
+
+---
+
+### **Why This Is Better:**
+
+1. **Encapsulation**: 
+   - The responsibility for setting up the chain is encapsulated within the `LogProcessor` class. The client is shielded from the implementation details and just interacts with the `LogProcessor`.
+
+2. **Single Responsibility Principle**:
+   - Each class has a clear responsibility: the concrete handlers handle log processing, while the `LogProcessor` class is responsible for building the chain and delegating the log processing task to the appropriate handler.
+
+3. **Maintainability**:
+   - It's easier to modify the chain or add/remove handlers when the responsibility for building the chain is centralized in one class. The client is not involved in the chain's construction, making the code more maintainable.
+
+4. **Flexibility**:
+   - If you need to change the sequence of handlers or modify the chain setup (for instance, changing the order or adding new types of log handlers), you can do so in the `LogProcessor` class without changing the client code.
+
+---
+
+### **Summary**:
+In the improved design, we encapsulate the construction of the chain of responsibility within a dedicated class (`LogProcessor`), leaving the client to simply use the `processLog` method to send log messages. This keeps the client's interaction clean and decouples it from the internal implementation of the chain, following the **Encapsulation** and **Single Responsibility Principle**.
+
+This approach makes the design more **maintainable**, **flexible**, and **encapsulated**.

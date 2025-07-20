@@ -1,0 +1,102 @@
+In Java, `Runnable` and `Callable` are two interfaces designed for executing tasks asynchronously. 
+While they serve similar purposes, they have key differences in their usage and functionality. Here’s a detailed comparison between `Runnable` and `Callable`.
+
+### Runnable
+
+**Definition**: `Runnable` is a functional interface that represents a task that can be executed concurrently. It is intended for tasks that do not return a result and cannot throw checked exceptions.
+
+**Key Characteristics**:
+- **No Return Value**: The `run()` method does not return a value. It has a `void` return type.
+- **No Checked Exceptions**: The `run()` method cannot throw checked exceptions. Any exceptions thrown within `run()` must be unchecked (`RuntimeException` or its subclasses).
+- **Simplicity**: It is simpler to use if the task does not need to return a result or handle checked exceptions.
+
+**Interface Definition**:
+```java
+@FunctionalInterface
+public interface Runnable {
+    void run();
+}
+```
+
+**Example**:
+```java
+public class RunnableExample implements Runnable {
+    @Override
+    public void run() {
+        System.out.println("Running a Runnable task.");
+    }
+
+    public static void main(String[] args) {
+        RunnableExample example = new RunnableExample();
+        Thread thread = new Thread(example);
+        thread.start();
+    }
+}
+```
+
+### Callable
+
+**Definition**: `Callable` is a functional interface similar to `Runnable`, but it is intended for tasks that return a result and can throw checked exceptions. 
+It is used with the `ExecutorService` framework to handle tasks that require a return value.
+
+**Key Characteristics**:
+- **Return Value**: The `call()` method returns a result of type `T`, allowing tasks to produce a result.
+- **Checked Exceptions**: The `call()` method can throw checked exceptions, allowing for more flexible error handling.
+- **Future Integration**: It works with `Future` objects to retrieve the result of the computation once it completes.
+
+**Interface Definition**:
+```java
+@FunctionalInterface
+public interface Callable<V> {
+    V call() throws Exception;
+}
+```
+
+**Example**:
+```java
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ExecutionException;
+
+public class CallableExample implements Callable<String> {
+    @Override
+    public String call() throws Exception {
+        return "Result from Callable task.";
+    }
+
+    public static void main(String[] args) {
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
+        CallableExample example = new CallableExample();
+        Future<String> future = executorService.submit(example);
+
+        try {
+            // Retrieve the result of the Callable task
+            String result = future.get();
+            System.out.println(result);
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        } finally {
+            executorService.shutdown();
+        }
+    }
+}
+```
+
+### Key Differences
+
+| Feature                | `Runnable`                        | `Callable`                     |
+|------------------------|----------------------------------|--------------------------------|
+| **Return Value**       | No return value (void)            | Returns a value of type `V`    |
+| **Checked Exceptions** | Cannot throw checked exceptions   | Can throw checked exceptions   |
+| **Interface Method**   | `void run()`                      | `V call() throws Exception`    |
+| **Usage Context**      | Used with `Thread` or `ExecutorService` for tasks with no result | Used with `ExecutorService` for tasks with a result |
+| **Future Integration** | Not used with `Future`            | Returns a `Future<V>`          |
+
+### Summary
+
+- **`Runnable`**: Use this when you have a task that does not need to return a result and does not throw checked exceptions. It is simpler and used with `Thread` or `ExecutorService` for straightforward tasks.
+- **`Callable`**: Use this when you need to perform a task that returns a result and may throw checked exceptions. It integrates with `Future` to allow for result retrieval and exception handling.
+
+Understanding the differences between `Runnable` and `Callable` will help you choose the appropriate interface based on whether you need a return value and how you want to handle exceptions in your concurrent tasks.

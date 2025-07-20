@@ -1,0 +1,215 @@
+### Singleton Scope in Spring Boot
+
+**Definition**: The singleton scope is the default scope in Spring. When a bean is defined with singleton scope, the Spring container creates exactly one instance of the bean per Spring IoC (Inversion of Control) container. 
+This single instance is shared across all components that require it.
+
+**Lifecycle**:
+1. The singleton bean is created when the application context is initialized.
+2. It remains in memory throughout the lifetime of the application context.
+3. When the application context is closed, the bean is destroyed.
+
+### Characteristics of Singleton Scope
+
+- **Shared Instance**: All requests for the bean return the same instance.
+- **Thread Safety**: Singleton beans are shared across multiple threads; therefore, any shared mutable state must be handled carefully to avoid concurrency issues.
+- **Memory Efficient**: Since only one instance is created, it can save memory compared to creating multiple instances.
+
+### Example 1: Basic Singleton Bean
+
+Let’s define a simple service class and a singleton bean.
+
+**Service Class**:
+
+```java
+import org.springframework.stereotype.Service;
+
+@Service
+public class UserService {
+    private String user;
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+}
+```
+
+**Configuration Class** (Optional, if you want to define the bean manually):
+
+```java
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class AppConfig {
+    @Bean
+    public UserService userService() {
+        return new UserService();
+    }
+}
+```
+
+**Usage**:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class UserComponent {
+
+    private final UserService userService;
+
+    @Autowired
+    public UserComponent(UserService userService) {
+        this.userService = userService;
+    }
+
+    public void performAction() {
+        userService.setUser("John Doe");
+        System.out.println("User in UserComponent: " + userService.getUser());
+    }
+}
+```
+
+### Example 2: Singleton with State
+
+In this example, we’ll see how multiple components interact with the same singleton bean.
+
+**Service Class**:
+
+```java
+import org.springframework.stereotype.Service;
+
+@Service
+public class CounterService {
+    private int count = 0;
+
+    public void increment() {
+        count++;
+    }
+
+    public int getCount() {
+        return count;
+    }
+}
+```
+
+**Components Using the Service**:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class FirstComponent {
+
+    private final CounterService counterService;
+
+    @Autowired
+    public FirstComponent(CounterService counterService) {
+        this.counterService = counterService;
+    }
+
+    public void doSomething() {
+        counterService.increment();
+        System.out.println("Count from FirstComponent: " + counterService.getCount());
+    }
+}
+
+@Component
+public class SecondComponent {
+
+    private final CounterService counterService;
+
+    @Autowired
+    public SecondComponent(CounterService counterService) {
+        this.counterService = counterService;
+    }
+
+    public void doSomething() {
+        counterService.increment();
+        System.out.println("Count from SecondComponent: " + counterService.getCount());
+    }
+}
+```
+
+**Main Application**:
+
+```java
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
+
+@SpringBootApplication
+public class SingletonScopeApplication implements CommandLineRunner {
+
+    public static void main(String[] args) {
+        SpringApplication.run(SingletonScopeApplication.class, args);
+    }
+
+    @Autowired
+    private FirstComponent firstComponent;
+
+    @Autowired
+    private SecondComponent secondComponent;
+
+    @Override
+    public void run(String... args) {
+        firstComponent.doSomething(); // Count becomes 1
+        secondComponent.doSomething(); // Count becomes 2
+        firstComponent.doSomething(); // Count becomes 3
+    }
+}
+```
+
+### Example 3: Singleton with Configuration
+
+You can also define a singleton bean using a configuration class. This is useful for beans that require complex initialization.
+
+**Configuration Class**:
+
+```java
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class AppConfig {
+
+    @Bean
+    public DatabaseConnection databaseConnection() {
+        return new DatabaseConnection("jdbc:mysql://localhost:3306/mydb", "user", "password");
+    }
+}
+
+public class DatabaseConnection {
+    private String url;
+    private String user;
+    private String password;
+
+    public DatabaseConnection(String url, String user, String password) {
+        this.url = url;
+        this.user = user;
+        this.password = password;
+    }
+
+    // Getters and methods for database operations
+}
+```
+
+### Summary
+
+**Benefits of Singleton Scope**:
+- **Simplicity**: Easy to implement and manage since you only deal with one instance.
+- **Performance**: Reduces overhead since objects are not created repeatedly.
+- **State Sharing**: Allows shared access to a stateful object across the application.
+
+**Drawbacks**:
+- **Thread Safety**: Care must be taken to handle shared mutable state.
+- **Memory Management**: Singleton beans remain in memory for the duration of the application context, which may lead to memory leaks if not managed properly.
+
+Using singleton beans effectively can enhance the performance and simplicity of your Spring Boot application, especially when shared services and resources are needed across different components.

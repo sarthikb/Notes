@@ -1,0 +1,179 @@
+### Using Proxy Mode with Prototype Scope in Spring
+
+In Spring, when using the prototype scope, a new instance of the bean is created every time it is requested. 
+However, sometimes you want to control the lifecycle of prototype beans while leveraging the benefits of a singleton bean that acts as a proxy. 
+This is where the `proxyMode` comes into play.
+
+**Proxy Mode**: When you define a bean with a scope of prototype, you can use proxy mode to create a proxy that manages the lifecycle of the prototype bean. 
+This allows you to inject the prototype bean into singleton-scoped beans without losing the prototype's instantiation behavior.
+
+### How It Works
+
+1. **Proxy Creation**: Instead of injecting the prototype bean directly into a singleton bean, you inject a proxy of the prototype bean.
+2. **Lifecycle Management**: The proxy manages the instantiation of the prototype bean, ensuring that a new instance is created each time it is needed while the singleton bean is retained.
+3. **Flexibility**: This approach provides a way to maintain the benefits of prototype scope (fresh instances) while working within the constraints of singleton beans.
+
+### Use Case: User-Specific Settings in a Web Application
+
+Imagine you have an application where users can set preferences, and you want each user to have their own settings that persist across multiple requests. 
+A prototype bean can be used for the user settings, while a singleton service manages those settings.
+
+#### Step 1: Define the Prototype Bean
+
+**UserSettings.java**:
+
+```java
+public class UserSettings {
+    private String theme;
+    private String language;
+
+    public UserSettings() {
+        this.theme = "default";
+        this.language = "en";
+    }
+
+    public String getTheme() {
+        return theme;
+    }
+
+    public void setTheme(String theme) {
+        this.theme = theme;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+}
+```
+
+#### Step 2: Define the Configuration Class
+
+**AppConfig.java**:
+
+```java
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
+
+@Configuration
+public class AppConfig {
+
+    @Bean
+    @Scope("prototype")
+    public UserSettings userSettings() {
+        return new UserSettings();
+    }
+}
+```
+
+#### Step 3: Define the Singleton Service with Proxy Mode
+
+**UserSettingsService.java**:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Configurable;
+import org.springframework.beans.factory.annotation.Scope;
+import org.springframework.context.annotation.ScopeProxyMode;
+import org.springframework.stereotype.Service;
+
+@Service
+@Scope(value = "singleton", proxyMode = ScopeProxyMode.TARGET_CLASS)
+public class UserSettingsService {
+
+    private final UserSettings userSettings;
+
+    @Autowired
+    public UserSettingsService(UserSettings userSettings) {
+        this.userSettings = userSettings;
+    }
+
+    public UserSettings getUserSettings() {
+        return userSettings;
+    }
+
+    public void updateSettings(String theme, String language) {
+        userSettings.setTheme(theme);
+        userSettings.setLanguage(language);
+    }
+}
+```
+
+### Step 4: Create a Controller to Handle User Requests
+
+**SettingsController.java**:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/settings")
+public class SettingsController {
+
+    private final UserSettingsService userSettingsService;
+
+    @Autowired
+    public SettingsController(UserSettingsService userSettingsService) {
+        this.userSettingsService = userSettingsService;
+    }
+
+    @GetMapping
+    public UserSettings getUserSettings() {
+        return userSettingsService.getUserSettings();
+    }
+
+    @PostMapping("/update")
+    public String updateUserSettings(@RequestParam String theme, @RequestParam String language) {
+        userSettingsService.updateSettings(theme, language);
+        return "User settings updated!";
+    }
+}
+```
+
+### Demonstrating the Use Case
+
+With this setup, when you access the `/settings` endpoint, it uses the prototype-scoped `UserSettings` bean, ensuring that each user session has its own instance.
+
+1. **Updating User Settings**:
+
+```bash
+curl -X POST "http://localhost:8080/settings/update?theme=dark&language=fr"
+```
+
+2. **Retrieving User Settings**:
+
+```bash
+curl -X GET "http://localhost:8080/settings"
+```
+
+### Expected Output
+
+For the update request, you will receive:
+
+```
+User settings updated!
+```
+
+For the retrieval request, you will see:
+
+```
+{"theme":"dark","language":"fr"}
+```
+
+### Summary
+
+**Benefits of Using Proxy Mode with Prototype Scope**:
+- **Lifecycle Management**: Ensures that the prototype bean is instantiated correctly even when injected into singleton beans.
+- **Isolation of State**: Each request or user gets a new instance of the prototype bean, which is crucial for user-specific data.
+- **Flexibility in Design**: Allows you to combine the benefits of singleton and prototype scopes seamlessly.
+
+**Drawbacks**:
+- **Complexity**: Using proxies can add a layer of complexity to the design, as you must understand how Spring manages proxies and scopes.
+- **Performance Overhead**: There might be a slight performance impact due to the proxying mechanism, but it is generally negligible compared to the benefits in many use cases.
+
+Using proxy mode with prototype scope effectively supports scenarios where you need user-specific data in a controlled manner while still leveraging the advantages of singleton beans.

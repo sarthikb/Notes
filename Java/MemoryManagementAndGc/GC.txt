@@ -1,0 +1,186 @@
+Garbage Collection (GC) in Java is the automatic process of reclaiming memory by identifying and disposing of objects that are no longer needed. 
+The JVM (Java Virtual Machine) is responsible for managing memory and automatically cleaning up unused objects to prevent memory leaks and optimize memory usage. 
+GC in Java plays a key role in ensuring that the program runs efficiently, but understanding the different types of garbage collection algorithms and how they work can help optimize your application’s performance.
+
+### **Overview of Garbage Collection (GC)**
+
+GC in Java involves the following key steps:
+1. **Marking**: The garbage collector identifies which objects are still reachable or referenced by other objects (i.e., which objects are still in use).
+2. **Sweeping**: The collector then identifies the unreachable objects (objects that are no longer referenced or used) and marks them as garbage.
+3. **Compacting**: This phase reclaims the memory by compacting the heap, reducing fragmentation by moving objects together.
+
+### **Different Types of Garbage Collection Algorithms**
+
+There are different types of garbage collectors available in Java, each designed to optimize different aspects of garbage collection. The main types are:
+
+1. **Serial Garbage Collector**
+2. **Parallel Garbage Collector (Throughput Collector)**
+3. **Concurrent Mark-Sweep (CMS) Collector**
+4. **G1 (Garbage-First) Collector**
+5. **ZGC (Z Garbage Collector)**
+6. **Shenandoah Garbage Collector**
+
+Let's discuss each of these in detail, including how they work and examples of when you would use them.
+
+---
+
+### **1. Serial Garbage Collector**
+
+The **Serial Garbage Collector** is the simplest garbage collector and is typically used for single-threaded environments or for small applications where low latency is not a concern. 
+It uses a single thread to perform all the tasks (marking, sweeping, and compacting).
+
+#### How it Works:
+- It pauses the application during the garbage collection process (i.e., **Stop-The-World** event).
+- The entire heap is divided into two areas: **Young Generation** and **Old Generation**.
+- It performs **Minor GC** (in the Young Generation) and **Major GC** (in the Old Generation) serially.
+
+#### Example:
+```bash
+java -XX:+UseSerialGC -jar myapp.jar
+```
+
+#### When to Use:
+- Small applications or desktop applications where low latency is not required.
+- Systems with limited resources or where only a single CPU is available.
+
+---
+
+### **2. Parallel Garbage Collector (Throughput Collector)**
+
+The **Parallel Garbage Collector** is designed to make better use of multi-core processors by using multiple threads for garbage collection. 
+It is aimed at applications where throughput (maximizing the number of tasks completed per unit of time) is the priority, and latency is not as critical.
+
+#### How it Works:
+- Uses multiple threads for both **Minor GC** (in the Young Generation) and **Major GC** (in the Old Generation).
+- The application is paused during collection, but multiple threads are used to speed up the process (thereby reducing pause times).
+- It tries to maximize throughput while minimizing garbage collection time.
+
+#### Example:
+```bash
+java -XX:+UseParallelGC -jar myapp.jar
+```
+
+#### When to Use:
+- Applications that require high throughput, such as batch processing, large-scale web applications, or scientific simulations.
+- Systems with multiple cores.
+
+---
+
+### **3. Concurrent Mark-Sweep (CMS) Collector**
+
+The **CMS (Concurrent Mark-Sweep)** Collector is designed to minimize application pause times, making it suitable for low-latency applications. 
+It performs most of its work concurrently with the application, thus reducing the duration of the "Stop-the-World" pauses.
+
+#### How it Works:
+- **Initial Mark**: Marks all the objects in the Young Generation and objects that are directly reachable from the root.
+- **Concurrent Mark**: Marks the remaining reachable objects in the Old Generation while the application is still running.
+- **Concurrent Preclean**: Optionally performs some cleaning while the application is running.
+- **Remark**: Final marking of unreachable objects (a brief "Stop-the-World" pause).
+- **Sweep**: Reclaims memory by clearing unreachable objects.
+
+#### Example:
+```bash
+java -XX:+UseConcMarkSweepGC -jar myapp.jar
+```
+
+#### When to Use:
+- Applications that need low-latency behavior (e.g., real-time systems, trading applications, web servers).
+- Systems where you cannot afford long pause times, as CMS performs garbage collection in parallel with application threads.
+
+---
+
+### **4. Garbage-First (G1) Collector**
+
+The **G1 Garbage Collector** was introduced in Java 7 and is the default in Java 9. It is designed for applications that have large heaps (e.g., hundreds of gigabytes) and require predictable low pause times. 
+G1 is a more advanced, optimized version of the CMS collector.
+
+#### How it Works:
+- Divides the heap into regions, making it more flexible for managing memory.
+- It collects garbage in a series of **incremental cycles** and does not require a full heap scan in each collection.
+- G1 tries to optimize both **application throughput** and **pause time**.
+- **Young Generation** and **Old Generation** are managed in different regions, and G1 adapts its collection based on the application’s needs.
+
+#### Example:
+```bash
+java -XX:+UseG1GC -jar myapp.jar
+```
+
+#### When to Use:
+- Applications with large heaps and a need for low-latency, predictable performance.
+- Web servers, large enterprise applications, and applications where garbage collection time is critical.
+
+---
+
+### **5. Z Garbage Collector (ZGC)**
+
+The **ZGC** (Z Garbage Collector) is an experimental, low-latency garbage collector introduced in JDK 11. It is designed to handle very large heaps (several terabytes) with very low pause times, typically in the **millisecond range**.
+
+#### How it Works:
+- ZGC performs **garbage collection concurrently**, using threads to work alongside the application.
+- It uses a technique called **colored pointers** to keep track of object references, enabling the collector to perform collection without having to stop the application.
+- It is **region-based**, similar to G1, and performs most of its work concurrently.
+
+#### Example:
+```bash
+java -XX:+UseZGC -jar myapp.jar
+```
+
+#### When to Use:
+- Applications that need very low pause times, especially when running on systems with extremely large heaps (terabytes of memory).
+- Highly parallel applications that cannot afford to stop for long pauses during GC.
+
+---
+
+### **6. Shenandoah Garbage Collector**
+
+The **Shenandoah Garbage Collector** is another low-latency garbage collector, similar to ZGC, introduced in JDK 12. 
+It also focuses on reducing pause times and providing predictable latency by doing most of its work concurrently with application threads.
+
+#### How it Works:
+- Shenandoah performs **concurrent garbage collection** (both minor and major collections) and aims for low-latency in large heaps.
+- It uses **region-based** management, and the goal is to keep **pause times low**, even with large heaps.
+
+#### Example:
+```bash
+java -XX:+UseShenandoahGC -jar myapp.jar
+```
+
+#### When to Use:
+- Applications that require low-latency with minimal pause times, especially those that are latency-sensitive and run on large heaps.
+- Similar to ZGC but with a different implementation approach.
+
+---
+
+### **GC Phases and Example**
+
+Here is a quick breakdown of how **Minor GC** and **Full GC** work with different collectors:
+
+#### Minor GC (Young Generation):
+- **Young Generation** (Eden + S0 + S1) is collected.
+- Shorter pauses, typically faster.
+
+#### Full GC (Young + Old Generations):
+- **Old Generation** is also involved.
+- Pauses can be significantly longer, depending on the heap size.
+
+#### Example of Minor GC in Parallel Collector:
+```bash
+java -XX:+UseParallelGC -Xms256m -Xmx1024m -jar myapp.jar
+```
+
+This will trigger Minor GCs (involving Young Generation) using multiple threads to reduce pause times. The process will involve Eden, S0, and S1, and if objects survive enough cycles, they will be promoted to the Old Generation.
+
+### **Summary of GC Types:**
+
+| GC Type                     | Use Case                                | Key Features                                      |
+|-----------------------------|-----------------------------------------|---------------------------------------------------|
+| **Serial GC**               | Single-threaded, small applications    | Single-threaded, simple, stop-the-world pauses    |
+| **Parallel GC**             | High throughput, multi-core machines   | Multiple threads, stop-the-world, higher throughput |
+| **CMS GC**                  | Low-latency, interactive applications  | Concurrent marking and sweeping, lower pause times |
+| **G1 GC**                   | Large heaps, low-latency requirements  | Region-based, low pause time, predictive performance |
+| **ZGC**                     | Very large heaps, ultra-low latency    | Concurrent collection, low pause time (milliseconds) |
+| **Shenandoah GC**           | Low-latency, large heaps               | Concurrent collection, low pause time (predictable) |
+
+### **Conclusion**
+
+Garbage collection is a crucial aspect of memory management in Java, and the choice of garbage collector can significantly impact the performance of your application. By understanding the various GC algorithms (Serial, Parallel, CMS, G1, ZGC, and Shenandoah), you can select the best one for your specific use case, whether that’s minimizing pause times, maximizing throughput, or handling large heaps efficiently.

@@ -1,0 +1,193 @@
+
+### **1. HashMap**
+
+`HashMap` is a part of the Java Collections Framework and implements the `Map` interface. It is an unordered collection that stores key-value pairs.
+
+#### Key Features:
+- **No order**: It does not maintain any order of elements. The entries are unordered.
+- **Allows `null`**: One `null` key and multiple `null` values are allowed.
+- **Thread-safety**: `HashMap` is **not thread-safe**. If multiple threads access it concurrently, external synchronization is required.
+- **Performance**: Offers constant-time performance (O(1)) for basic operations like `get()` and `put()` on average.
+- **Resizing**: When the number of elements exceeds the threshold (capacity * load factor), the map is resized.
+
+#### Example:
+
+```java
+import java.util.HashMap;
+
+public class HashMapExample {
+    public static void main(String[] args) {
+        HashMap<String, String> map = new HashMap<>();
+
+        // Adding key-value pairs
+        map.put("apple", "fruit");
+        map.put("carrot", "vegetable");
+        map.put("dog", "animal");
+
+        System.out.println(map.get("apple")); // Output: fruit
+        System.out.println(map); // Output: {apple=fruit, dog=animal, carrot=vegetable}
+    }
+}
+```
+
+**Output**:
+```
+fruit
+{apple=fruit, dog=animal, carrot=vegetable}
+```
+
+---
+
+### **2. LinkedHashMap**
+
+`LinkedHashMap` is a subclass of `HashMap` that maintains the **insertion order** of the keys. It uses a **doubly-linked list** to maintain the order in which elements were inserted.
+
+#### Key Features:
+- **Maintains insertion order**: The elements are ordered based on the order of insertion, unlike `HashMap`.
+- **Allows `null`**: Like `HashMap`, it allows one `null` key and multiple `null` values.
+- **Thread-safety**: Not thread-safe.
+- **Performance**: Provides **slightly slower** performance than `HashMap` due to the overhead of maintaining the linked list.
+- **Linked List**: Uses a linked list to store the entries to maintain their order.
+
+#### Example:
+
+```java
+import java.util.LinkedHashMap;
+
+public class LinkedHashMapExample {
+    public static void main(String[] args) {
+        LinkedHashMap<String, String> map = new LinkedHashMap<>();
+
+        // Adding key-value pairs
+        map.put("apple", "fruit");
+        map.put("carrot", "vegetable");
+        map.put("dog", "animal");
+
+        System.out.println(map.get("apple")); // Output: fruit
+        System.out.println(map); // Output: {apple=fruit, carrot=vegetable, dog=animal}
+    }
+}
+```
+
+**Output**:
+```
+fruit
+{apple=fruit, carrot=vegetable, dog=animal}
+```
+
+Here, the order of elements is the same as the order they were inserted.
+
+---
+
+### **3. TreeMap**
+
+`TreeMap` is an implementation of the `NavigableMap` interface that stores key-value pairs in a **sorted order**. It uses a **Red-Black tree** to maintain order based on the keys.
+
+#### Key Features:
+- **Sorted order**: Elements are ordered based on their natural order or a custom comparator.
+- **No `null` keys**: `TreeMap` does **not allow `null` keys** but allows `null` values.
+- **Thread-safety**: Not thread-safe.
+- **Performance**: The operations like `get()`, `put()`, and `remove()` have a time complexity of **O(log n)** due to the Red-Black tree.
+- **Navigational methods**: `TreeMap` provides methods like `firstKey()`, `lastKey()`, `higherKey()`, and `lowerKey()` to perform efficient navigation of the keys.
+
+#### Example:
+
+```java
+import java.util.TreeMap;
+
+public class TreeMapExample {
+    public static void main(String[] args) {
+        TreeMap<String, String> map = new TreeMap<>();
+
+        // Adding key-value pairs
+        map.put("apple", "fruit");
+        map.put("carrot", "vegetable");
+        map.put("dog", "animal");
+
+        System.out.println(map.get("apple")); // Output: fruit
+        System.out.println(map); // Output: {apple=fruit, carrot=vegetable, dog=animal}
+    }
+}
+```
+
+**Output**:
+```
+fruit
+{apple=fruit, carrot=vegetable, dog=animal}
+```
+
+In this example, the `TreeMap` automatically sorts the keys in their natural order (alphabetically).
+
+---
+
+### **4. Hashtable**
+
+`Hashtable` is a legacy class that also implements the `Map` interface. It is similar to `HashMap` but has some important differences.
+
+#### Key Features:
+- **Thread-safe**: `Hashtable` is **synchronized**, meaning it is thread-safe and can be safely used in a multi-threaded environment.
+- **No `null` keys or values**: `Hashtable` does **not allow `null` keys or `null` values**. Attempting to insert a `null` key or value will throw a `NullPointerException`.
+- **Performance**: Due to synchronization, `Hashtable` is generally slower than `HashMap` in a single-threaded environment.
+- **Legacy class**: `Hashtable` is considered outdated and has been largely replaced by `HashMap` or `ConcurrentHashMap` in modern Java code.
+
+#### Example:
+
+```java
+import java.util.Hashtable;
+
+public class HashtableExample {
+    public static void main(String[] args) {
+        Hashtable<String, String> table = new Hashtable<>();
+
+        // Adding key-value pairs
+        table.put("apple", "fruit");
+        table.put("carrot", "vegetable");
+        table.put("dog", "animal");
+
+        System.out.println(table.get("apple")); // Output: fruit
+        System.out.println(table); // Output: {apple=fruit, carrot=vegetable, dog=animal}
+    }
+}
+```
+
+**Output**:
+```
+fruit
+{apple=fruit, carrot=vegetable, dog=animal}
+```
+
+---
+
+### **Comparison Table**
+
+| Feature                    | **HashMap**                                | **LinkedHashMap**                           | **TreeMap**                                | **Hashtable**                             |
+|----------------------------|--------------------------------------------|---------------------------------------------|--------------------------------------------|-------------------------------------------|
+| **Order of elements**      | No order (unordered)                      | Maintains insertion order                  | Sorted order (natural or custom comparator) | No order (unordered)                     |
+| **Null keys/values**       | Allows one `null` key and multiple `null` values | Allows one `null` key and multiple `null` values | Does **not allow `null` keys**, allows `null` values | Does **not allow `null` keys or values**  |
+| **Thread-safety**          | Not thread-safe                           | Not thread-safe                             | Not thread-safe                            | **Thread-safe** (synchronized)            |
+| **Performance**            | Average **O(1)** for `get()` and `put()`   | Slightly slower than `HashMap` (due to linked list overhead) | **O(log n)** for `get()` and `put()` due to Red-Black tree | Slower than `HashMap` due to synchronization |
+| **Data structure**         | Hash table                                 | Hash table + linked list                   | Red-Black tree                             | Hash table                                |
+| **Use cases**              | Fast access, unordered data               | When insertion order matters               | When sorted data is required               | Legacy code, thread-safe requirements     |
+
+---
+
+### **Summary of When to Use Each**:
+- **Use `HashMap`**:
+  - When you need a **fast** map without any ordering requirement.
+  - When you do not require thread safety and just need good performance for insertion, retrieval, and removal operations.
+
+- **Use `LinkedHashMap`**:
+  - When you need a **fast map** but also need to preserve the **insertion order**.
+  - When maintaining the order in which elements were added is important.
+
+- **Use `TreeMap`**:
+  - When you need **sorted** data based on natural ordering or a custom comparator.
+  - When you require **navigational methods** like `firstKey()`, `lastKey()`, etc., to find keys in a range or perform ordered operations.
+
+- **Use `Hashtable`**:
+  - If you are working with **legacy code** that requires a **synchronized map**.
+  - Avoid using `Hashtable` for new development in favor of `HashMap` or `ConcurrentHashMap`.
+
+---
+
+In conclusion, the choice between `HashMap`, `LinkedHashMap`, `TreeMap`, and `Hashtable` depends on your specific needs regarding thread safety, ordering, performance, and the type of data you are working with.

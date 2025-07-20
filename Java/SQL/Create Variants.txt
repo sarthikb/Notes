@@ -1,0 +1,243 @@
+Certainly! Here is a comprehensive guide to the different **SQL `CREATE TABLE`** scenarios with detailed explanations and examples for various types of relationships and constraints.
+
+### 1. **Simple Table Creation**
+
+A **simple table** includes basic columns with no foreign keys or constraints, except primary key constraints.
+
+```sql
+CREATE TABLE Employees (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    salary DECIMAL(10, 2) NOT NULL
+);
+```
+
+- **Explanation**:
+  - **`id`**: A unique identifier for each employee, set as the primary key and auto-incremented.
+  - **`name`, `email`, `salary`**: Regular columns storing the name, email, and salary.
+  - **`PRIMARY KEY`**: Ensures that `id` is unique and non-null.
+
+### 2. **Table with Foreign Key (One-to-Many Relationship)**
+
+This scenario involves creating a **child table** that references a **parent table** via a foreign key.
+
+#### Example: **Order Table** referencing **User Table**
+
+```sql
+CREATE TABLE Users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE Orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total_amount DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
+);
+```
+
+- **Explanation**:
+  - **`Users` table**: Contains `id`, `username`, and `email`.
+  - **`Orders` table**: Contains an `id`, `user_id` (foreign key), `order_date`, and `total_amount`.
+  - **`FOREIGN KEY (user_id) REFERENCES Users(id)`**: Establishes a relationship between `Orders` and `Users`, where `user_id` in **Orders** references the `id` in **Users**.
+  - **`ON DELETE CASCADE`**: Ensures that when a **User** is deleted, all associated **Orders** will be deleted.
+
+### 3. **Table with Unique Constraint**
+
+A **unique constraint** ensures that all values in a column or a set of columns are distinct.
+
+```sql
+CREATE TABLE Employees (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,  -- Ensures email is unique
+    phone VARCHAR(15) UNIQUE             -- Ensures phone number is unique
+);
+```
+
+- **Explanation**:
+  - **`email`** and **`phone`** columns have a **`UNIQUE`** constraint, meaning no two employees can have the same email or phone number.
+
+### 4. **Table with Composite Primary Key**
+
+A **composite primary key** consists of multiple columns that together uniquely identify a record.
+
+#### Example: **Order_Items** Table with Composite Primary Key
+
+```sql
+CREATE TABLE Orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE Order_Items (
+    order_id INT,
+    product_id INT,
+    quantity INT NOT NULL,
+    PRIMARY KEY (order_id, product_id),  -- Composite primary key
+    FOREIGN KEY (order_id) REFERENCES Orders(id),
+    FOREIGN KEY (product_id) REFERENCES Products(id)
+);
+```
+
+- **Explanation**:
+  - **`Order_Items` table**: Contains `order_id`, `product_id`, and `quantity`.
+  - **`PRIMARY KEY (order_id, product_id)`**: The combination of `order_id` and `product_id` forms a composite primary key, ensuring that each pair is unique.
+  - **`FOREIGN KEY (order_id) REFERENCES Orders(id)`** and **`FOREIGN KEY (product_id) REFERENCES Products(id)`**: These foreign keys enforce relationships between the **Order_Items** table, **Orders**, and **Products**.
+
+### 5. **Many-to-Many Relationship Using a Junction Table**
+
+A **many-to-many relationship** can be modeled using a **junction table** (also known as a **join table**), which contains foreign keys referencing both parent tables.
+
+#### Example: **Student Table**, **Course Table**, and **Enrollment Table** (Many-to-Many)
+
+```sql
+CREATE TABLE Students (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE Courses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    course_name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE Enrollments (
+    student_id INT,
+    course_id INT,
+    enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (student_id, course_id),  -- Composite primary key
+    FOREIGN KEY (student_id) REFERENCES Students(id),
+    FOREIGN KEY (course_id) REFERENCES Courses(id)
+);
+```
+
+- **Explanation**:
+  - **`Students`** and **`Courses`**: Simple tables with unique IDs and names.
+  - **`Enrollments`**: This is the junction table that establishes the many-to-many relationship between **Students** and **Courses**.
+  - **Composite Primary Key**: The combination of `student_id` and `course_id` is unique, meaning each student can be enrolled in a course only once.
+  - **Foreign Keys**: Each `student_id` refers to a student, and each `course_id` refers to a course.
+
+### 6. **Table with `CHECK` Constraint**
+
+A **`CHECK` constraint** ensures that the values in a column satisfy a specified condition.
+
+#### Example: **Product Table** with a `CHECK` Constraint for `price`
+
+```sql
+CREATE TABLE Products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    CONSTRAINT price_check CHECK (price > 0)  -- Price must be greater than 0
+);
+```
+
+- **Explanation**:
+  - **`CONSTRAINT price_check CHECK (price > 0)`**: Ensures that the `price` of a product must always be greater than 0.
+
+### 7. **Table with Default Value**
+
+A **`DEFAULT`** constraint assigns a default value to a column if no value is specified during insertion.
+
+#### Example: **Employee Table** with a Default `hire_date`
+
+```sql
+CREATE TABLE Employees (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    hire_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Default to the current timestamp
+);
+```
+
+- **Explanation**:
+  - **`hire_date`**: This column will automatically be set to the current timestamp when a new employee is added, unless explicitly specified.
+
+### 8. **Table with `ON DELETE RESTRICT`**
+
+The **`ON DELETE RESTRICT`** option prevents the deletion of a record in the parent table if there are any dependent records in the child table.
+
+#### Example: **Product Table** with `ON DELETE RESTRICT`
+
+```sql
+CREATE TABLE Categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    category_name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE Products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    category_id INT,
+    FOREIGN KEY (category_id) REFERENCES Categories(id) ON DELETE RESTRICT
+);
+```
+
+- **Explanation**:
+  - **`ON DELETE RESTRICT`**: This constraint ensures that a **Category** cannot be deleted if there are **Products** that still reference it. The deletion of a **Category** is restricted if it is being used by any **Product**.
+
+### 9. **Table with `ON UPDATE CASCADE`**
+
+The **`ON UPDATE CASCADE`** option ensures that when the referenced primary key is updated, the corresponding foreign key values are automatically updated in the child table.
+
+#### Example: **Product Table** with `ON UPDATE CASCADE`
+
+```sql
+CREATE TABLE Categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    category_name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE Products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    category_id INT,
+    FOREIGN KEY (category_id) REFERENCES Categories(id) ON UPDATE CASCADE
+);
+```
+
+- **Explanation**:
+  - **`ON UPDATE CASCADE`**: If the `id` of a **Category** is updated, the corresponding `category_id` in the **Products** table will automatically be updated.
+
+### 10. **Table with `NULL` and `NOT NULL` Constraints**
+
+- **`NULL`**: Allows a column to have `NULL` values.
+- **`NOT NULL`**: Prevents a column from having `NULL` values.
+
+#### Example: **Employee Table** with `NULL` and `NOT NULL` Constraints
+
+```sql
+CREATE TABLE Employees (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,  -- Cannot be NULL
+    email VARCHAR(255) NULL,     -- Can be NULL
+    phone VARCHAR(15) NOT NULL   -- Cannot be NULL
+);
+```
+
+- **Explanation**:
+  - **`name`** and **`phone`**: These columns cannot be `NULL` because of the **`NOT NULL`** constraint.
+  - **`email`**: This column can have `NULL` values.
+
+### Summary of Common Constraints:
+
+1. **`PRIMARY KEY`**: Ensures that the column has unique, non-null values.
+2. **`FOREIGN KEY`**: Establishes a relationship between tables and enforces
+
+ referential integrity.
+3. **`UNIQUE`**: Ensures all values in a column are distinct.
+4. **`CHECK`**: Ensures that values in a column meet a specified condition.
+5. **`DEFAULT`**: Assigns a default value to a column if none is provided.
+6. **`NOT NULL`**: Ensures that a column cannot have a null value.
+7. **`CASCADE`, `RESTRICT`, `SET NULL`**: Defines how foreign keys behave on delete/update operations.
+
+This covers a broad spectrum of **`CREATE TABLE`** commands, each demonstrating a key feature or constraint. Depending on your use case, these can be mixed and matched to form robust table definitions.

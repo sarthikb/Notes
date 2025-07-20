@@ -1,0 +1,87 @@
+In Java, both processes and threads are fundamental units of execution, but they differ in terms of how they operate and interact with the system resources. Here's a breakdown of the differences, followed by an example.
+
+### **Processes:**
+
+A process is an independent program that runs in its own memory space. Multiple processes don't share memory and communicate through inter-process communication (IPC) mechanisms. 
+Each process has its own address space and resources, such as file handles, environment variables, and so on. 
+
+#### Characteristics of a Process:
+- Each process runs in its own memory space.
+- Processes are independent of each other and are isolated.
+- They don’t share data directly; they can communicate using IPC (e.g., sockets, files).
+- Creating a new process is expensive in terms of memory and time.
+
+#### Example of Creating a Process in Java:
+```java
+import java.io.*;
+
+public class ProcessExample {
+    public static void main(String[] args) {
+        try {
+            // Start a new process (for example, run the "ls" command on Linux)
+            Process process = new ProcessBuilder("ls", "-l").start();
+            
+            // Wait for the process to finish and get the exit code
+            int exitCode = process.waitFor();
+            System.out.println("Process exited with code: " + exitCode);
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+### **Threads:**
+
+A thread is a lightweight unit of execution within a process. 
+Multiple threads within the same process share the same memory and resources. 
+Threads are the smallest unit of execution and are sometimes called "lightweight processes." 
+Multiple threads in a process can run concurrently and can share data directly without the need for IPC.
+
+#### Characteristics of a Thread:
+- Threads share the same memory space (heap, variables) within a process.
+- Threads are faster to create and manage compared to processes.
+- They can communicate with each other easily by directly accessing shared memory.
+- Threads within the same process have a lower overhead in terms of memory and context switching.
+
+#### Example of Creating a Thread in Java:
+```java
+class MyThread extends Thread {
+    public void run() {
+        System.out.println("Thread is running...");
+    }
+}
+
+public class ThreadExample {
+    public static void main(String[] args) {
+        // Create a new thread
+        MyThread thread = new MyThread();
+        
+        // Start the thread
+        thread.start();
+        
+        // Wait for the thread to finish
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        
+        System.out.println("Thread execution completed.");
+    }
+}
+```
+
+### **Key Differences Between Processes and Threads in Java:**
+
+| **Aspect**             | **Process**                             | **Thread**                               |
+|------------------------|-----------------------------------------|------------------------------------------|
+| **Memory**             | Has its own separate memory space.      | Shares memory with other threads in the same process. |
+| **Communication**      | Inter-process communication (IPC) required. | Direct communication via shared memory. |
+| **Overhead**           | Higher overhead due to separate memory and resources. | Lower overhead, lighter weight. |
+| **Creation**           | Slower to create.                      | Faster to create. |
+| **Isolation**          | Processes are isolated.                | Threads within the same process share resources. |
+
+In summary:
+- **Processes** are independent entities with their own resources, and communication between them is more costly.
+- **Threads** are smaller, faster units of execution that share resources with other threads in the same process, making them more lightweight and efficient for certain concurrent tasks.

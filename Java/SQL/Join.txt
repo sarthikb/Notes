@@ -1,0 +1,283 @@
+### Types of Joins in SQL
+
+SQL joins allow you to combine rows from two or more tables based on related columns. They are essential for querying relational databases where information is distributed across multiple tables. There are different types of joins:
+
+1. **INNER JOIN**
+2. **LEFT JOIN (or LEFT OUTER JOIN)**
+3. **RIGHT JOIN (or RIGHT OUTER JOIN)**
+4. **FULL JOIN (or FULL OUTER JOIN)**
+5. **CROSS JOIN**
+6. **SELF JOIN**
+
+Let’s explain each type of join in detail with example queries and expected output.
+
+---
+
+### 1. **INNER JOIN**
+
+An `INNER JOIN` returns only the rows where there is a match in both tables. If there is no match, those rows are excluded from the result.
+
+#### Syntax:
+```sql
+SELECT columns
+FROM table1
+INNER JOIN table2
+ON table1.column = table2.column;
+```
+
+#### Example:
+
+Consider two tables: `orders` and `customers`.
+
+**`orders` table**:
+| order_id | customer_id | order_date | amount |
+|----------|-------------|------------|--------|
+| 1        | 101         | 2024-01-01 | 500    |
+| 2        | 102         | 2024-01-05 | 700    |
+| 3        | 103         | 2024-01-10 | 300    |
+| 4        | 104         | 2024-01-15 | 400    |
+
+**`customers` table**:
+| customer_id | customer_name |
+|-------------|---------------|
+| 101         | Alice         |
+| 102         | Bob           |
+| 104         | Charlie       |
+| 105         | Dave          |
+
+**Query (INNER JOIN)**:
+```sql
+SELECT orders.order_id, customers.customer_name, orders.amount
+FROM orders
+INNER JOIN customers
+ON orders.customer_id = customers.customer_id;
+```
+
+#### Explanation:
+- We join `orders` and `customers` based on the matching `customer_id`.
+- Only customers who have placed an order will appear in the result.
+
+#### Output:
+| order_id | customer_name | amount |
+|----------|---------------|--------|
+| 1        | Alice         | 500    |
+| 2        | Bob           | 700    |
+| 4        | Charlie       | 400    |
+
+- **Note**: Customer `105` (Dave) does not appear because there is no matching order for him.
+
+---
+
+### 2. **LEFT JOIN (or LEFT OUTER JOIN)**
+
+A `LEFT JOIN` (or `LEFT OUTER JOIN`) returns all the rows from the **left table** (first table), and the matching rows from the **right table** (second table). If there is no match, the result is `NULL` from the right table.
+
+#### Syntax:
+```sql
+SELECT columns
+FROM table1
+LEFT JOIN table2
+ON table1.column = table2.column;
+```
+
+#### Example:
+
+**Query (LEFT JOIN)**:
+```sql
+SELECT orders.order_id, customers.customer_name, orders.amount
+FROM orders
+LEFT JOIN customers
+ON orders.customer_id = customers.customer_id;
+```
+
+#### Explanation:
+- All rows from `orders` will be returned.
+- For customers who have no matching order, `NULL` values will appear in the result for columns from the `customers` table.
+
+#### Output:
+| order_id | customer_name | amount |
+|----------|---------------|--------|
+| 1        | Alice         | 500    |
+| 2        | Bob           | 700    |
+| 3        | NULL          | 300    |
+| 4        | Charlie       | 400    |
+
+- **Note**: Customer `103` has no matching customer, so `customer_name` is `NULL`.
+
+---
+
+### 3. **RIGHT JOIN (or RIGHT OUTER JOIN)**
+
+A `RIGHT JOIN` (or `RIGHT OUTER JOIN`) returns all the rows from the **right table** (second table) and the matching rows from the **left table** (first table). If there is no match, the result is `NULL` from the left table.
+
+#### Syntax:
+```sql
+SELECT columns
+FROM table1
+RIGHT JOIN table2
+ON table1.column = table2.column;
+```
+
+#### Example:
+
+**Query (RIGHT JOIN)**:
+```sql
+SELECT orders.order_id, customers.customer_name, orders.amount
+FROM orders
+RIGHT JOIN customers
+ON orders.customer_id = customers.customer_id;
+```
+
+#### Explanation:
+- All rows from `customers` will be returned.
+- For customers who haven't made an order, `NULL` will appear in the result for columns from the `orders` table.
+
+#### Output:
+| order_id | customer_name | amount |
+|----------|---------------|--------|
+| 1        | Alice         | 500    |
+| 2        | Bob           | 700    |
+| 4        | Charlie       | 400    |
+| NULL     | Dave          | NULL   |
+
+- **Note**: Customer `105` (Dave) appears even though there is no order for him.
+
+---
+
+### 4. **FULL JOIN (or FULL OUTER JOIN)**
+
+A `FULL JOIN` (or `FULL OUTER JOIN`) returns all rows from both tables. If there is no match, the result is `NULL` from the table that lacks the matching row.
+
+#### Syntax:
+```sql
+SELECT columns
+FROM table1
+FULL JOIN table2
+ON table1.column = table2.column;
+```
+
+#### Example:
+
+**Query (FULL JOIN)**:
+```sql
+SELECT orders.order_id, customers.customer_name, orders.amount
+FROM orders
+FULL JOIN customers
+ON orders.customer_id = customers.customer_id;
+```
+
+#### Explanation:
+- All rows from both tables are returned.
+- If there is no match, `NULL` will be displayed for the missing side.
+
+#### Output:
+| order_id | customer_name | amount |
+|----------|---------------|--------|
+| 1        | Alice         | 500    |
+| 2        | Bob           | 700    |
+| 3        | NULL          | 300    |
+| 4        | Charlie       | 400    |
+| NULL     | Dave          | NULL   |
+
+- **Note**: Similar to `LEFT JOIN` and `RIGHT JOIN`, but this join returns all records from both tables.
+
+---
+
+### 5. **CROSS JOIN**
+
+A `CROSS JOIN` returns the **Cartesian product** of two tables. This means that every row from the first table is combined with every row from the second table. It doesn’t require any condition to join the tables.
+
+#### Syntax:
+```sql
+SELECT columns
+FROM table1
+CROSS JOIN table2;
+```
+
+#### Example:
+
+**Query (CROSS JOIN)**:
+```sql
+SELECT orders.order_id, customers.customer_name
+FROM orders
+CROSS JOIN customers;
+```
+
+#### Explanation:
+- This will return every combination of `order_id` from `orders` and `customer_name` from `customers`.
+
+#### Output:
+| order_id | customer_name |
+|----------|---------------|
+| 1        | Alice         |
+| 1        | Bob           |
+| 1        | Charlie       |
+| 1        | Dave          |
+| 2        | Alice         |
+| 2        | Bob           |
+| 2        | Charlie       |
+| 2        | Dave          |
+| 3        | Alice         |
+| 3        | Bob           |
+| 3        | Charlie       |
+| 3        | Dave          |
+| 4        | Alice         |
+| 4        | Bob           |
+| 4        | Charlie       |
+| 4        | Dave          |
+
+- **Note**: `CROSS JOIN` can produce a large number of rows, depending on the size of the tables.
+
+---
+
+### 6. **SELF JOIN**
+
+A `SELF JOIN` is a join where a table is joined with itself. It’s often used to find relationships between rows within the same table.
+
+#### Syntax:
+```sql
+SELECT a.column, b.column
+FROM table a, table b
+WHERE a.column = b.column;
+```
+
+#### Example:
+
+Let’s assume you have a `employees` table:
+
+**`employees` table**:
+| employee_id | employee_name | manager_id |
+|-------------|---------------|------------|
+| 1           | Alice         | NULL       |
+| 2           | Bob           | 1          |
+| 3           | Charlie       | 1          |
+| 4           | Dave          | 2          |
+
+**Query (SELF JOIN)**:
+```sql
+SELECT e1.employee_name AS employee, e2.employee_name AS manager
+FROM employees e1
+LEFT JOIN employees e2 ON e1.manager_id = e2.employee_id;
+```
+
+#### Explanation:
+- In this case, we are joining the `employees` table with itself. The `manager_id` column in the `employees` table refers to another `employee_id`, so we can retrieve the employee's manager.
+- We use a `LEFT JOIN` to include employees with no manager.
+
+#### Output:
+| employee | manager |
+|----------|---------|
+| Alice    | NULL    |
+| Bob      | Alice   |
+| Charlie  | Alice   |
+| Dave     | Bob     |
+
+- **Note**: Alice is the manager of Bob and Charlie, while Bob is the manager of Dave.
+
+---
+
+### Summary of Join Types:
+
+1. **INNER JOIN**: Returns only the rows with matching values in both tables.
+2. **LEFT JOIN**: Returns all rows from the left table, and matching rows from the right table (if no match, `NULL` from the right).
+3. **RIGHT JOIN**: Returns all rows from the right table, and matching rows from the left table

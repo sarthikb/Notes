@@ -1,0 +1,97 @@
+In Spring Boot, bean scopes define the lifecycle and visibility of beans within the application context. There are several scopes available, each suited for different use cases. Here’s a detailed explanation of the main bean scopes:
+
+### 1. Singleton Scope
+
+- **Definition**: This is the default scope. A single instance of the bean is created and shared throughout the application context.
+- **Lifecycle**: The bean is created when the application context is initialized and remains in memory until the application is terminated.
+- **Use Case**: Use this scope when you want a single shared instance across multiple components. For example, a service that handles shared business logic.
+
+```java
+@Bean
+public MyService myService() {
+    return new MyService();
+}
+```
+
+### 2. Prototype Scope
+
+- **Definition**: A new instance of the bean is created every time it is requested from the application context.
+- **Lifecycle**: The bean is created each time it is requested and is not managed after its creation. It will be eligible for garbage collection when there are no references to it.
+- **Use Case**: Use this scope for beans that maintain state and should not be shared. For example, a form object used in a web request.
+
+```java
+@Bean
+@Scope("prototype")
+public MyBean myBean() {
+    return new MyBean();
+}
+```
+
+### 3. Request Scope
+
+- **Definition**: A new instance of the bean is created for each HTTP request. This scope is only valid in a web application.
+- **Lifecycle**: The bean is created at the start of an HTTP request and destroyed at the end of the request.
+- **Use Case**: Ideal for beans that need to be unique for each HTTP request, like a bean that handles data for a specific user session in a web application.
+
+```java
+@Bean
+@Scope("request")
+public MyRequestScopedBean myRequestScopedBean() {
+    return new MyRequestScopedBean();
+}
+```
+
+### 4. Session Scope
+
+- **Definition**: A new instance of the bean is created for each HTTP session. This is also only applicable in a web application.
+- **Lifecycle**: The bean is created at the start of an HTTP session and destroyed when the session ends.
+- **Use Case**: Useful for storing user-specific data across multiple requests within the same session, like user preferences.
+
+```java
+@Bean
+@Scope("session")
+public MySessionScopedBean mySessionScopedBean() {
+    return new MySessionScopedBean();
+}
+```
+
+### 5. Global Session Scope
+
+- **Definition**: A new instance of the bean is created for each global HTTP session. This is primarily used in portlet applications.
+- **Lifecycle**: Similar to session scope but applicable to global sessions in a portlet environment.
+- **Use Case**: Not commonly used in standard web applications; more relevant in specific enterprise-level applications involving multiple portlets.
+
+```java
+@Bean
+@Scope("globalSession")
+public MyGlobalSessionScopedBean myGlobalSessionScopedBean() {
+    return new MyGlobalSessionScopedBean();
+}
+```
+
+### 6. Application Scope
+
+- **Definition**: A single instance of the bean is created for the lifecycle of a ServletContext.
+- **Lifecycle**: The bean is created when the web application is started and destroyed when the application is shut down.
+- **Use Case**: Use this for shared resources that are common across multiple sessions and requests within the same web application.
+
+```java
+@Bean
+@Scope("application")
+public MyApplicationScopedBean myApplicationScopedBean() {
+    return new MyApplicationScopedBean();
+}
+```
+
+### Choosing the Right Scope
+
+When selecting a bean scope, consider:
+
+- **Shared vs. Unique**: Does the bean need to be shared across requests (singleton/application) or unique to each request/session (prototype/request/session)?
+- **Statefulness**: Does the bean maintain state that needs to be isolated per user/session?
+- **Performance**: Singleton beans are typically more performant since they minimize object creation overhead.
+
+### Conclusion
+
+Understanding bean scopes is crucial for managing the lifecycle of components in a Spring Boot application effectively. 
+Each scope serves specific scenarios, and selecting the appropriate one ensures optimal resource management and application performance.

@@ -1,0 +1,114 @@
+### `@ConditionalOnProperty` Annotation in Spring
+
+#### Overview
+
+`@ConditionalOnProperty` is a part of Spring Boot’s conditional configuration annotations. 
+It allows you to conditionally enable or disable beans based on the presence and value of specific properties in the application’s configuration files (e.g., `application.properties` or `application.yml`).
+
+#### Usage
+
+The annotation can be applied to configuration classes or bean methods to control whether the bean should be created based on certain property conditions.
+
+**Syntax**:
+
+```java
+@ConditionalOnProperty(
+    name = "property.name",
+    havingValue = "expectedValue",
+    matchIfMissing = false
+)
+```
+
+- **name**: The property key(s) to check.
+- **havingValue**: The expected value of the property to trigger the bean creation.
+- **matchIfMissing**: If true, the condition matches if the property is not set.
+
+### Example
+
+Here’s a simple example illustrating the use of `@ConditionalOnProperty`.
+
+**1. Define a Service Class**:
+
+```java
+import org.springframework.stereotype.Service;
+
+@Service
+@ConditionalOnProperty(name = "feature.toggle.logging", havingValue = "true", matchIfMissing = false)
+public class LoggingService {
+    public void log(String message) {
+        System.out.println("Log: " + message);
+    }
+}
+```
+
+**2. Define Properties**:
+
+In `application.properties`:
+
+```properties
+feature.toggle.logging=true
+```
+
+When `feature.toggle.logging` is set to `true`, the `LoggingService` bean will be created. If set to `false` or left unset, it won't be created.
+
+### Real-World Use Case: Feature Toggle
+
+A common use case for `@ConditionalOnProperty` is implementing feature toggles, which allow you to enable or disable features at runtime without deploying new code.
+
+**Scenario**: You are developing an e-commerce application with a new payment integration feature. You want to enable this feature for only certain users or environments (e.g., production).
+
+**Implementation**:
+
+1. **Define the Payment Service**:
+
+```java
+import org.springframework.stereotype.Service;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+
+@Service
+@ConditionalOnProperty(name = "feature.payment.integration", havingValue = "enabled", matchIfMissing = false)
+public class PaymentIntegrationService {
+    public void integrate() {
+        System.out.println("Payment integration enabled.");
+    }
+}
+```
+
+2. **Application Properties**:
+
+For production:
+
+```properties
+feature.payment.integration=enabled
+```
+
+For development or testing:
+
+```properties
+feature.payment.integration=disabled
+```
+
+### Advantages
+
+1. **Flexibility**: Easily enable or disable features without changing code or redeploying.
+2. **Environment-Specific Configuration**: Tailor bean creation to different environments (e.g., development, testing, production).
+3. **Cleaner Code**: Reduces the need for complex if-else logic in your configuration classes.
+4. **Testing**: Facilitate easier testing of features by toggling them on and off.
+
+### Disadvantages
+
+1. **Complexity**: Overuse of conditional annotations can lead to complicated configurations that are hard to track.
+2. **Hidden Dependencies**: Beans that are conditionally loaded may create confusion about the actual dependencies of your application.
+3. **Harder to Trace Issues**: If a bean is missing due to a property not being set, it might lead to runtime errors that are hard to diagnose.
+4. **Limited Visibility**: The behavior of the application can change based on external configurations, which may not be immediately obvious when looking at the code.
+
+### Conclusion
+
+The `@ConditionalOnProperty` annotation is a powerful tool for managing bean lifecycles and enabling feature toggles based on application properties. It allows for flexible and environment-specific configurations, which can enhance the maintainability and usability of your application. However, it should be used judiciously to avoid complexity and maintain clarity in your application's structure.
+
+### Summary of Use Case
+
+In an e-commerce application:
+
+- **Feature Toggle**: Using `@ConditionalOnProperty`, you can control whether new payment integration features are enabled based on configuration properties. 
+This allows for gradual rollouts or testing without code changes, significantly improving deployment flexibility and risk management.

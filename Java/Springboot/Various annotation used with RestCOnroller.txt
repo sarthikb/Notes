@@ -1,0 +1,176 @@
+In a Spring Boot application, the `@RestController` annotation is often used alongside various other annotations to define RESTful web services effectively.
+ Below is a detailed explanation of the commonly used annotations with `@RestController`, including examples and key points to note.
+
+### Common Annotations with `@RestController`
+
+1. **@GetMapping**
+   - **Purpose**: Maps HTTP GET requests to specific handler methods.
+   - **Example**:
+
+     ```java
+     import org.springframework.web.bind.annotation.GetMapping;
+     import org.springframework.web.bind.annotation.RestController;
+
+     @RestController
+     public class ApiController {
+
+         @GetMapping("/api/hello")
+         public String hello() {
+             return "Hello, World!";
+         }
+     }
+     ```
+
+   - **Key Points**:
+     - Used for read operations.
+     - Can accept parameters via URL query strings.
+
+2. **@PostMapping**
+   - **Purpose**: Maps HTTP POST requests to handler methods, typically used to create new resources.
+   - **Example**:
+
+     ```java
+     import org.springframework.web.bind.annotation.PostMapping;
+     import org.springframework.web.bind.annotation.RequestBody;
+     import org.springframework.web.bind.annotation.RestController;
+
+     @RestController
+     public class UserController {
+
+         @PostMapping("/api/users")
+         public User createUser(@RequestBody User user) {
+             // Save the user (omitting actual persistence logic)
+             return user; // Returning the created user
+         }
+     }
+     ```
+
+   - **Key Points**:
+     - Use `@RequestBody` to map the incoming request body to a Java object.
+     - Useful for creating resources in RESTful services.
+
+3. **@PutMapping**
+   - **Purpose**: Maps HTTP PUT requests to handler methods, used to update existing resources.
+   - **Example**:
+
+     ```java
+     import org.springframework.web.bind.annotation.PutMapping;
+     import org.springframework.web.bind.annotation.PathVariable;
+     import org.springframework.web.bind.annotation.RequestBody;
+     import org.springframework.web.bind.annotation.RestController;
+
+     @RestController
+     public class UserController {
+
+         @PutMapping("/api/users/{id}")
+         public User updateUser(@PathVariable Long id, @RequestBody User user) {
+             // Update user logic here (omitting actual persistence logic)
+             user.setId(id);
+             return user; // Returning the updated user
+         }
+     }
+     ```
+
+   - **Key Points**:
+     - Use `@PathVariable` to capture values from the URI.
+     - Typically used when the entire resource needs to be updated.
+
+4. **@DeleteMapping**
+   - **Purpose**: Maps HTTP DELETE requests to handler methods, used to delete resources.
+   - **Example**:
+
+     ```java
+     import org.springframework.web.bind.annotation.DeleteMapping;
+     import org.springframework.web.bind.annotation.PathVariable;
+     import org.springframework.web.bind.annotation.RestController;
+
+     @RestController
+     public class UserController {
+
+         @DeleteMapping("/api/users/{id}")
+         public String deleteUser(@PathVariable Long id) {
+             // Delete user logic here (omitting actual persistence logic)
+             return "User with ID " + id + " deleted.";
+         }
+     }
+     ```
+
+   - **Key Points**:
+     - Use `@PathVariable` to identify the resource to delete.
+     - Generally used to remove resources from the server.
+
+5. **@RequestParam**
+   - **Purpose**: Extracts query parameters from the request URL.
+   - **Example**:
+
+     ```java
+     import org.springframework.web.bind.annotation.GetMapping;
+     import org.springframework.web.bind.annotation.RequestParam;
+     import org.springframework.web.bind.annotation.RestController;
+
+     @RestController
+     public class ApiController {
+
+         @GetMapping("/api/greet")
+         public String greet(@RequestParam String name) {
+             return "Hello, " + name + "!";
+         }
+     }
+     ```
+
+   - **Key Points**:
+     - Useful for optional or required query parameters.
+     - You can provide default values using `@RequestParam(defaultValue = "Guest")`.
+
+6. **@PathVariable**
+   - **Purpose**: Extracts values from the URI path.
+   - **Example**:
+
+     ```java
+     import org.springframework.web.bind.annotation.GetMapping;
+     import org.springframework.web.bind.annotation.PathVariable;
+     import org.springframework.web.bind.annotation.RestController;
+
+     @RestController
+     public class ApiController {
+
+         @GetMapping("/api/users/{id}")
+         public String getUser(@PathVariable Long id) {
+             return "User ID: " + id; // Simulating retrieval of a user by ID
+         }
+     }
+     ```
+
+   - **Key Points**:
+     - Use when the identifier is part of the URL path.
+     - Helps create cleaner, RESTful URLs.
+
+7. **@RequestBody**
+   - **Purpose**: Maps the request body to a Java object.
+   - **Example**:
+
+     ```java
+     import org.springframework.web.bind.annotation.PostMapping;
+     import org.springframework.web.bind.annotation.RequestBody;
+     import org.springframework.web.bind.annotation.RestController;
+
+     @RestController
+     public class ApiController {
+
+         @PostMapping("/api/products")
+         public Product createProduct(@RequestBody Product product) {
+             // Logic to save the product (omitting actual persistence logic)
+             return product;
+         }
+     }
+     ```
+
+   - **Key Points**:
+     - Used primarily with `@PostMapping` and `@PutMapping`.
+     - Automatically deserializes JSON/XML into Java objects.
+
+### Conclusion
+
+Using `@RestController` with these various annotations allows you to build robust and scalable RESTful APIs in Spring Boot. 
+Each annotation serves a specific purpose, enabling you to handle HTTP requests efficiently while keeping your code organized and intuitive. 
+.

@@ -1,0 +1,253 @@
+Here are various SQL commands for **Insert**, **Update**, **Alter**, **Delete**, and **Truncate** with detailed examples and scenarios.
+
+### 1. **`INSERT` Statement**
+
+The `INSERT` statement is used to add new rows to a table.
+
+#### Basic Insert:
+Inserting a single row into the `Employees` table.
+
+```sql
+INSERT INTO Employees (name, email, salary)
+VALUES ('John Doe', 'john.doe@example.com', 50000);
+```
+
+- **Explanation**:
+  - **`name`, `email`, `salary`**: Columns in the `Employees` table.
+  - The **values** are provided for these columns in the same order as the column names.
+
+#### Insert Multiple Rows:
+Inserting multiple rows in a single statement.
+
+```sql
+INSERT INTO Employees (name, email, salary)
+VALUES 
+    ('Jane Smith', 'jane.smith@example.com', 60000),
+    ('Robert Brown', 'robert.brown@example.com', 55000),
+    ('Lucy Green', 'lucy.green@example.com', 52000);
+```
+
+- **Explanation**:
+  - This inserts **multiple rows** into the `Employees` table with different values.
+
+#### Insert with `SELECT`:
+Inserting data by selecting it from another table.
+
+```sql
+INSERT INTO Employees (name, email, salary)
+SELECT name, email, salary FROM TempEmployees;
+```
+
+- **Explanation**:
+  - This copies data from the `TempEmployees` table and inserts it into the `Employees` table.
+
+### 2. **`UPDATE` Statement**
+
+The `UPDATE` statement is used to modify existing data in a table.
+
+#### Basic Update:
+Updating a single record in the `Employees` table.
+
+```sql
+UPDATE Employees
+SET salary = 55000
+WHERE name = 'John Doe';
+```
+
+- **Explanation**:
+  - This updates the **salary** of the employee with the name "John Doe" to 55,000.
+
+#### Update with Condition:
+Updating multiple records with specific conditions.
+
+```sql
+UPDATE Employees
+SET salary = salary * 1.10
+WHERE salary < 60000;
+```
+
+- **Explanation**:
+  - This **increases the salary** by 10% for employees with a salary less than 60,000.
+
+#### Update with `JOIN`:
+Updating a table using data from another table via a `JOIN`.
+
+```sql
+UPDATE Employees e
+JOIN Departments d ON e.department_id = d.id
+SET e.salary = e.salary * 1.05
+WHERE d.name = 'Sales';
+```
+
+- **Explanation**:
+  - This updates the **salary** of employees in the "Sales" department by increasing it by 5%.
+
+### 3. **`ALTER` Statement**
+
+The `ALTER` statement is used to modify the structure of a table, such as adding, dropping, or modifying columns.
+
+#### Add Column:
+Adding a new column to the `Employees` table.
+
+```sql
+ALTER TABLE Employees
+ADD COLUMN phone_number VARCHAR(15);
+```
+
+- **Explanation**:
+  - Adds a new column **`phone_number`** to the `Employees` table.
+
+#### Modify Column Type:
+Changing the data type of an existing column.
+
+```sql
+ALTER TABLE Employees
+MODIFY COLUMN salary DECIMAL(12, 2);
+```
+
+- **Explanation**:
+  - Changes the data type of the **`salary`** column to `DECIMAL(12, 2)` to allow for larger salary values.
+
+#### Drop Column:
+Dropping a column from the table.
+
+```sql
+ALTER TABLE Employees
+DROP COLUMN phone_number;
+```
+
+- **Explanation**:
+  - Removes the **`phone_number`** column from the `Employees` table.
+
+#### Rename Column:
+Renaming a column in the table.
+
+```sql
+ALTER TABLE Employees
+RENAME COLUMN salary TO base_salary;
+```
+
+- **Explanation**:
+  - Renames the **`salary`** column to **`base_salary`** in the `Employees` table.
+
+#### Add Constraint:
+Adding a unique constraint to the `email` column.
+
+```sql
+ALTER TABLE Employees
+ADD CONSTRAINT unique_email UNIQUE (email);
+```
+
+- **Explanation**:
+  - Adds a **unique constraint** to the **`email`** column, ensuring all email addresses are unique.
+
+### 4. **`DELETE` Statement**
+
+The `DELETE` statement is used to remove existing rows from a table.
+
+#### Basic Delete:
+Deleting a single record from the `Employees` table.
+
+```sql
+DELETE FROM Employees
+WHERE name = 'John Doe';
+```
+
+- **Explanation**:
+  - Deletes the row(s) where the **name** is 'John Doe'. In this case, only one row will be affected.
+
+#### Delete Multiple Records:
+Deleting records based on a condition.
+
+```sql
+DELETE FROM Employees
+WHERE salary < 50000;
+```
+
+- **Explanation**:
+  - Deletes all employees with a **salary** less than 50,000.
+
+#### Delete All Records:
+Deleting all records from a table without removing the table itself.
+
+```sql
+DELETE FROM Employees;
+```
+
+- **Explanation**:
+  - This deletes all the rows in the `Employees` table but keeps the structure of the table intact.
+
+### 5. **`TRUNCATE` Statement**
+
+The `TRUNCATE` statement is used to remove **all rows** from a table without logging individual row deletions. It is faster than `DELETE` as it doesn't generate individual row delete operations.
+
+#### Truncate Table:
+Truncating all records from a table.
+
+```sql
+TRUNCATE TABLE Employees;
+```
+
+- **Explanation**:
+  - This removes **all rows** from the `Employees` table but retains the table structure, including the columns, constraints, etc.
+  - Unlike `DELETE`, `TRUNCATE` **cannot be rolled back** (unless wrapped in a transaction, depending on the DBMS).
+
+### Comparison Between `DELETE` and `TRUNCATE`:
+
+- **`DELETE`**:
+  - Row-by-row deletion.
+  - Supports `WHERE` clauses to delete specific rows.
+  - Slower for large datasets as it logs each row deletion.
+  - Can be rolled back in a transaction.
+
+- **`TRUNCATE`**:
+  - Removes all rows in one go.
+  - Does not support `WHERE` clauses.
+  - Faster, especially for large datasets, as it does not log individual row deletions.
+  - Cannot be rolled back in most DBMS (or can only be rolled back if within a transaction).
+
+### 6. **Combining `DELETE` and `TRUNCATE` with Foreign Keys**
+
+- **`DELETE` with Foreign Key Constraints**:
+  If there are foreign key constraints on the table, you cannot delete rows in the parent table if there are dependent rows in the child table (unless using `ON DELETE CASCADE`).
+
+```sql
+DELETE FROM Employees
+WHERE id = 1;  -- Will work if there are no dependent rows in child tables
+```
+
+- **`TRUNCATE` with Foreign Key Constraints**:
+  `TRUNCATE` cannot be used if there are any foreign key constraints, even if the table is empty. The table should not have any dependent data in other tables, or the foreign key constraints must be removed temporarily.
+
+```sql
+TRUNCATE TABLE Employees;  -- Will fail if there are any foreign key constraints
+```
+
+---
+
+### Summary of Key Points:
+
+1. **`INSERT`**:
+   - Used to add new rows.
+   - Can insert single or multiple rows.
+   - Can insert data from another table.
+
+2. **`UPDATE`**:
+   - Used to modify existing rows.
+   - Supports conditions to update only specific rows.
+   - Can use joins to update from another table.
+
+3. **`ALTER`**:
+   - Used to change the structure of a table (e.g., adding or modifying columns, adding constraints).
+
+4. **`DELETE`**:
+   - Used to delete specific rows based on conditions.
+   - Slower for large datasets compared to `TRUNCATE`.
+   - Can be rolled back in a transaction.
+
+5. **`TRUNCATE`**:
+   - Used to delete all rows from a table very quickly.
+   - Does not generate individual row delete operations.
+   - Cannot be rolled back in most cases and does not support conditions.
+
+These SQL commands allow you to perform a wide variety of operations on your database tables. The **`DELETE`** and **`TRUNCATE`** operations are particularly useful when you need to remove data, but remember that **`TRUNCATE`** is typically faster and less resource-intensive, though it cannot be undone unless inside a transaction.

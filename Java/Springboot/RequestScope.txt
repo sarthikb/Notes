@@ -1,0 +1,147 @@
+### Request Scope in Spring Boot
+
+**Definition**: The request scope in Spring means that a new instance of the bean is created for each HTTP request. This scope is only applicable in web applications. 
+Each request gets its own instance, which is created when the request is received and destroyed at the end of the request.
+
+**Lifecycle**:
+1. A new bean instance is created at the start of an HTTP request.
+2. The bean is available throughout the processing of the request.
+3. It is destroyed after the request has been processed and the response has been sent.
+
+### Characteristics of Request Scope
+
+- **Request-specific Instances**: Each HTTP request gets a unique bean instance.
+- **Short-lived**: The lifecycle of the bean is tightly coupled with the lifecycle of the HTTP request.
+- **Stateless or Stateful**: Typically used for stateless beans, but can also be stateful as long as the state is specific to the request.
+
+### Use Case for Request Scope
+
+Request scope is useful in scenarios where you want to maintain request-specific data without sharing it across different requests. Common use cases include:
+
+1. **Handling User Input**: Beans that are used to capture or validate data submitted through web forms.
+2. **Session Management**: Storing temporary data that is relevant only for a single request, such as intermediate processing results.
+3. **Web Services**: When handling API calls, where each request may need its own instance of a processing bean.
+
+### Example: Request Scope
+
+Let's illustrate request scope with a scenario involving a simple user input form.
+
+**Step 1: Define the Request-scoped Bean**
+
+**UserRequest.java**:
+
+```java
+public class UserRequest {
+    private String name;
+    private String email;
+
+    // Getters and Setters
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+}
+```
+
+**Step 2: Define a Configuration Class**
+
+**AppConfig.java**:
+
+```java
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
+
+@Configuration
+public class AppConfig {
+
+    @Bean
+    @Scope("request")
+    public UserRequest userRequest() {
+        return new UserRequest();
+    }
+}
+```
+
+**Step 3: Create a Controller to Handle the Request**
+
+**UserController.java**:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/user")
+public class UserController {
+
+    private final UserRequest userRequest;
+
+    @Autowired
+    public UserController(UserRequest userRequest) {
+        this.userRequest = userRequest;
+    }
+
+    @PostMapping("/submit")
+    public String submitUser(@RequestParam String name, @RequestParam String email) {
+        userRequest.setName(name);
+        userRequest.setEmail(email);
+
+        // Here, you can process the userRequest, e.g., save it to a database
+        return "User submitted: " + userRequest.getName() + " with email: " + userRequest.getEmail();
+    }
+}
+```
+
+**Step 4: Demonstrating the Request Behavior**
+
+With the above setup, when a request is made to submit user information, a new instance of `UserRequest` is created.
+
+**Example Request**:
+
+```bash
+curl -X POST "http://localhost:8080/user/submit?name=John&email=john@example.com"
+```
+
+### Output
+
+The output for the above request will be:
+
+```
+User submitted: John with email: john@example.com
+```
+
+If you make a second request:
+
+```bash
+curl -X POST "http://localhost:8080/user/submit?name=Jane&email=jane@example.com"
+```
+
+The output will be:
+
+```
+User submitted: Jane with email: jane@example.com
+```
+
+### Summary
+
+**Benefits of Request Scope**:
+- **Isolation**: Each request has its own instance, preventing data leakage between requests.
+- **Efficient Handling**: Useful for managing request-specific data in web applications without cluttering shared resources.
+
+**Drawbacks**:
+- **Memory Overhead**: Each request creates a new instance, which can increase memory usage if there are many concurrent requests.
+- **State Management**: Developers need to ensure that request-scoped beans are properly utilized only within the context of a request.
+
+Using request-scoped beans is particularly advantageous for applications where the handling of user input and request-specific data is critical, ensuring a clean and efficient flow of data in web applications.

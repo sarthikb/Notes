@@ -1,0 +1,220 @@
+In Java, a thread can be in one of several states during its lifecycle. 
+These states represent the different stages a thread goes through from its creation to termination. 
+Java threads are managed by the **Java Virtual Machine (JVM)**, and each thread can be in one of the following **seven thread states** as defined in the **`Thread.State`** enum:
+
+1. **NEW**
+2. **RUNNABLE**
+3. **BLOCKED**
+4. **WAITING**
+5. **TIMED_WAITING**
+6. **TERMINATED**
+7. **MONITOR STATE** (Not explicitly a state in `Thread.State`, but important to understand in concurrency)
+
+### Thread States:
+
+#### 1. **NEW**:
+- A thread is in the `NEW` state when it has been created but has not yet started. In this state, the thread is not eligible for scheduling.
+
+#### Example:
+```java
+class MyThread extends Thread {
+    public void run() {
+        System.out.println("Thread is running.");
+    }
+
+    public static void main(String[] args) {
+        MyThread thread = new MyThread(); // The thread is in NEW state here
+        System.out.println(thread.getState());  // Output: NEW
+    }
+}
+```
+
+#### 2. **RUNNABLE**:
+- A thread is in the `RUNNABLE` state when it is eligible for running but not necessarily executing. The thread is waiting for the CPU to allocate it processing time. 
+- Note: In Java, there is no distinction between "ready to run" and "currently running." Both are represented as `RUNNABLE`.
+
+#### Example:
+```java
+class MyThread extends Thread {
+    public void run() {
+        System.out.println("Thread is running.");
+    }
+
+    public static void main(String[] args) {
+        MyThread thread = new MyThread();
+        thread.start();  // The thread moves to RUNNABLE state once started
+    }
+}
+```
+
+#### 3. **BLOCKED**:
+- A thread enters the `BLOCKED` state when it is waiting to acquire a lock (monitor) to access a synchronized block of code that is currently locked by another thread. 
+The thread will remain in this state until it successfully acquires the lock.
+  
+#### Example:
+```java
+class MyThread extends Thread {
+    synchronized void method1() {
+        System.out.println("In method1");
+    }
+
+    synchronized void method2() {
+        System.out.println("In method2");
+    }
+
+    public void run() {
+        method1();
+        method2();
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        MyThread t1 = new MyThread();
+        MyThread t2 = new MyThread();
+
+        t1.start();
+        t2.start();
+
+        // The second thread will be blocked while trying to execute synchronized methods.
+    }
+}
+```
+
+In this example, when two threads try to access the synchronized methods, one thread will be blocked while waiting for the lock.
+
+#### 4. **WAITING**:
+- A thread enters the `WAITING` state when it is waiting indefinitely for another thread to perform a particular action (e.g., notifying it).
+- This state can occur when a thread calls `Object.wait()` or `Thread.join()` without a timeout.
+
+#### Example:
+```java
+class MyThread extends Thread {
+    public void run() {
+        synchronized (this) {
+            try {
+                wait();  // Thread enters WAITING state
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        MyThread thread = new MyThread();
+        thread.start();
+        thread.join();  // This will wait for the thread to complete (joins the thread, making it WAITING)
+    }
+}
+```
+
+#### 5. **TIMED_WAITING**:
+- A thread is in the `TIMED_WAITING` state when it is waiting for a specific period of time to pass. This can occur when a thread calls `sleep(long millis)`, `join(long millis)`, or `wait(long millis)`.
+
+#### Example:
+```java
+class MyThread extends Thread {
+    public void run() {
+        try {
+            sleep(1000);  // The thread will be in TIMED_WAITING for 1 second
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        MyThread thread = new MyThread();
+        thread.start();
+        System.out.println(thread.getState());  // Output will show TIMED_WAITING during the sleep period
+    }
+}
+```
+
+#### 6. **TERMINATED**:
+- A thread enters the `TERMINATED` state when its `run()` method completes or when it is interrupted.
+
+#### Example:
+```java
+class MyThread extends Thread {
+    public void run() {
+        System.out.println("Thread is running.");
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        MyThread thread = new MyThread();
+        thread.start();  // The thread enters TERMINATED state once the run() method completes
+        thread.join();
+        System.out.println(thread.getState());  // Output: TERMINATED
+    }
+}
+```
+
+### **Monitor State (Concurrency and Synchronization)**
+
+In the context of thread synchronization, **monitor state** refers to the state where a thread is trying to acquire a lock (monitor) of a particular object. 
+A thread can be in a **monitor** state when it is waiting for the monitor to be available for access. This happens when the thread tries to enter a synchronized block or method but the lock is currently held by another thread.
+
+When multiple threads attempt to access synchronized blocks or methods, Java uses the **monitor** to control access. 
+This mechanism is fundamental to ensuring thread safety by preventing multiple threads from simultaneously executing critical sections of code.
+
+In terms of thread states, **monitor state** is most closely associated with the **BLOCKED** state, where a thread is waiting to acquire a lock on an object (monitor). 
+Once the lock is released, the thread can proceed to execute the synchronized code.
+
+#### Example (Monitor State and Blocked State):
+```java
+class SharedResource {
+    synchronized void method1() {
+        try {
+            Thread.sleep(2000);  // Simulate some work
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    synchronized void method2() {
+        System.out.println("Executing method2");
+    }
+}
+
+class MyThread extends Thread {
+    SharedResource resource;
+
+    MyThread(SharedResource resource) {
+        this.resource = resource;
+    }
+
+    public void run() {
+        resource.method1();  // Thread enters BLOCKED state if another thread is holding the lock
+        resource.method2();
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        SharedResource sharedResource = new SharedResource();
+
+        MyThread t1 = new MyThread(sharedResource);
+        MyThread t2 = new MyThread(sharedResource);
+
+        t1.start();
+        Thread.sleep(500);  // Ensure that t1 has time to enter method1 first
+        t2.start();         // t2 will be blocked trying to enter method1 because t1 is holding the lock
+
+        t1.join();
+        t2.join();
+    }
+}
+```
+
+In this example:
+- When `t2` attempts to execute `method1()`, it will be in a **BLOCKED** state because `t1` is holding the lock on `method1()`.
+- `t2` is essentially waiting in a **monitor state** until `t1` releases the lock.
+
+### **Summary of Thread States and Monitor State**:
+
+- **NEW**: Thread has been created but not started.
+- **RUNNABLE**: Thread is eligible for running but may not be executing right away.
+- **BLOCKED**: Thread is blocked, waiting for access to a synchronized method or block.
+- **WAITING**: Thread is waiting indefinitely for another thread's action (e.g., `wait()` or `join()`).
+- **TIMED_WAITING**: Thread is waiting for a specified period (e.g., `sleep()` or `wait(timeout)`).
+- **TERMINATED**: Thread has finished execution.
+- **Monitor State**: Refers to the state where a thread is trying to acquire a lock (monitor) for synchronized code. 
+This is most often seen in the **BLOCKED** state, when the thread is waiting to acquire a lock held by another thread.
+
+Understanding these states is crucial for managing thread lifecycle and concurrency in Java applications.

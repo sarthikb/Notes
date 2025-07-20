@@ -1,0 +1,95 @@
+In Java, memory management is handled through an automatic garbage collection mechanism, meaning the programmer doesn't need to manually allocate or free memory. 
+However, Java does divide memory into different areas for different types of data. The two main areas for memory allocation are:
+
+1. **Stack**  
+2. **Heap**
+
+### 1. **The Stack:**
+The stack is used for **primitive data types** (e.g., `int`, `char`, `double`, etc.) and **references to objects**. It's organized in a Last In, First Out (LIFO) structure, and each thread in a Java program has its own stack.
+
+When a method is called:
+- The stack contains all the local variables and the references to the objects that were passed as parameters.
+- When the method exits, the data in the stack associated with that method is removed (popped off the stack).
+  
+### Example of data in the stack:
+```java
+public class MemoryExample {
+    public static void main(String[] args) {
+        int x = 10; // Primitive type (x stored in stack)
+        MyClass obj = new MyClass(); // Reference to object (obj reference stored in stack)
+    }
+}
+
+class MyClass {
+    int a = 5; // Primitive field inside object
+}
+```
+In this example:
+- `x` is a primitive value of type `int`, so it's stored in the stack.
+- `obj` is a reference to an object of type `MyClass`, so the reference itself is stored in the stack. However, the actual object (an instance of `MyClass`) will be stored in the heap.
+
+### 2. **The Heap:**
+The heap is used for **objects**. When you create an instance of a class using the `new` keyword, the object is allocated in the heap. 
+The heap is shared among all threads, and objects stored here have a longer lifespan compared to local variables stored on the stack.
+
+Java’s garbage collector automatically reclaims memory from the heap when objects are no longer referenced by the program.
+
+### Example of data in the heap:
+```java
+public class MemoryExample {
+    public static void main(String[] args) {
+        MyClass obj1 = new MyClass(); // Object stored in heap
+        MyClass obj2 = new MyClass(); // Another object stored in heap
+    }
+}
+
+class MyClass {
+    int a = 5; // Instance field (part of object in heap)
+}
+```
+In this example:
+- `obj1` and `obj2` are references to instances of `MyClass`, and the references themselves are stored in the stack.
+- The actual objects (instances of `MyClass`) are stored in the heap.
+
+### Memory Allocation Example
+
+```java
+public class MemoryDemo {
+    public static void main(String[] args) {
+        int a = 5;              // 'a' stored in stack, primitive value 5.
+        MyClass obj1 = new MyClass(); // Reference to obj1 is stored in stack, object created in heap.
+        MyClass obj2 = obj1;          // Reference to obj1 (which is in stack) is assigned to obj2 in stack.
+    }
+}
+
+class MyClass {
+    int number = 10;           // Instance field, stored within the object in heap.
+}
+```
+
+#### How memory is allocated:
+- **Stack Memory**:  
+  - Local variables `a`, `obj1`, and `obj2` are stored in the stack.
+  - The reference `obj1` points to an object in the heap.
+  - When `obj2 = obj1` is executed, `obj2` in the stack will now point to the same object in the heap as `obj1`.
+
+- **Heap Memory**:  
+  - The actual object created by `new MyClass()` is stored in the heap, including its fields like `number`.
+
+### Key Points to Remember:
+1. **Stack**:
+   - Stores method calls, local variables, and references to objects.
+   - Has a fast allocation and deallocation process.
+   - Size is limited and depends on the system.
+   - Objects in the stack exist only within the scope of the method.
+
+2. **Heap**:
+   - Stores objects (instances of classes).
+   - Has dynamic memory allocation and larger capacity.
+   - Objects remain in the heap until no references to them exist (then garbage collection reclaims memory).
+
+### Garbage Collection:
+Java uses **garbage collection** to automatically manage memory. 
+It detects when objects in the heap are no longer reachable (i.e., there are no references pointing to them) and reclaims their memory, making it available for new objects. This helps prevent memory leaks.
+
+In conclusion, **stack** is used for local variables and method-related memory (primitive data types and references), while **heap** stores the actual objects created using the `new` keyword.

@@ -1,0 +1,95 @@
+### Reentrant Lock
+
+A **Reentrant Lock** is a type of synchronization mechanism used in multithreaded programming that allows a thread to lock the same resource (or monitor) multiple times without causing a deadlock. This type of lock keeps track of how many times a thread has locked it. A thread that holds a reentrant lock can safely re-enter and re-lock it without blocking itself. It ensures that the thread can release the lock in a balanced way.
+
+Key characteristics:
+- **Reentrancy**: A thread can acquire the lock multiple times, but it must release it the same number of times to fully unlock it.
+- **Thread-specific ownership**: Only the thread that holds the lock can unlock it.
+- **Avoidance of deadlocks**: Reentrant locks avoid certain deadlocks, especially when a thread locks a resource, then calls a method that also tries to lock the same resource.
+
+In Java, a common implementation of reentrant locks is **`ReentrantLock`**, which is part of the `java.util.concurrent.locks` package.
+
+### Monitor Lock
+
+A **Monitor Lock** is a synchronization construct used by Java’s `synchronized` keyword. When a method or block is marked as synchronized, it locks on a monitor (or intrinsic lock) associated with the object being synchronized. Only one thread can execute a synchronized method or block on a particular object at a time.
+
+Key characteristics:
+- **Intrinsic lock**: Every object in Java has an implicit monitor associated with it. When a thread enters a synchronized method or block, it acquires the lock on the object (or class) that the method or block is synchronizing on.
+- **No reentrancy**: A thread cannot re-enter the same synchronized block if it already holds the lock on the object; it must release the lock before it can acquire it again.
+- **Implicit**: The monitor lock is implicit when using the `synchronized` keyword in Java, and you don’t have direct control over it as you would with a `ReentrantLock`.
+
+### Differences Between Reentrant Lock and Monitor Lock
+
+1. **Reentrancy**:
+   - **Reentrant Lock**: Allows the thread that holds the lock to acquire it again without blocking itself.
+   - **Monitor Lock**: Does not allow a thread to re-enter the same synchronized block unless it releases the lock first.
+
+2. **Lock Management**:
+   - **Reentrant Lock**: Provides more explicit control over lock acquisition and release. A thread must explicitly release the lock after acquiring it.
+   - **Monitor Lock**: The lock management is implicit. A thread enters and exits a synchronized method or block without the need for explicit lock acquisition or release.
+
+3. **Fairness**:
+   - **Reentrant Lock**: `ReentrantLock` can be created with fairness policies, which means it can guarantee that the longest waiting thread gets the lock next.
+   - **Monitor Lock**: Does not provide fairness policies; threads may acquire the lock in any order.
+
+4. **Interruptibility**:
+   - **Reentrant Lock**: Can be interrupted if the thread is waiting for the lock (via methods like `lockInterruptibly()`).
+   - **Monitor Lock**: Cannot be interrupted in the same way; a thread trying to acquire a monitor lock will block until it is available.
+
+5. **Advanced Features**:
+   - **Reentrant Lock**: Provides advanced features like timed locks (`tryLock()`), which allow you to attempt to acquire the lock for a specific period before giving up.
+   - **Monitor Lock**: Offers fewer features, being mostly limited to basic locking and unlocking.
+
+### Example of Reentrant Lock in Java:
+
+```java
+import java.util.concurrent.locks.ReentrantLock;
+
+public class ReentrantLockExample {
+    private final ReentrantLock lock = new ReentrantLock();
+
+    public void doSomething() {
+        lock.lock(); // Lock acquisition
+        try {
+            // Critical section code
+            System.out.println("Thread is working inside the critical section.");
+            // The same thread can lock again without issue
+            doAnotherThing();
+        } finally {
+            lock.unlock(); // Always ensure the lock is released
+        }
+    }
+
+    private void doAnotherThing() {
+        lock.lock();
+        try {
+            System.out.println("Thread is working in another critical section.");
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+```
+
+### Example of Monitor Lock in Java:
+
+```java
+public class MonitorLockExample {
+    public synchronized void doSomething() {
+        // Critical section code
+        System.out.println("Thread is working inside the critical section.");
+        doAnotherThing();
+    }
+
+    public synchronized void doAnotherThing() {
+        System.out.println("Thread is working in another critical section.");
+    }
+}
+```
+
+In the **Monitor Lock** example, when a thread enters `doSomething()`, it holds the lock on the object implicitly and cannot re-enter `doAnotherThing()` unless the lock is released first.
+
+### In Summary:
+- **Reentrant Lock**: More flexible, supports reentrant locking and additional features like fairness and interruptibility.
+- **Monitor Lock**: Simpler and automatically handled by the `synchronized` keyword but lacks the advanced features and control that reentrant locks offer.
+

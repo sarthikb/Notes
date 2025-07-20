@@ -1,0 +1,124 @@
+The internal working of a **`HashMap`** in Java is an interesting and crucial topic. It provides a **key-value** mapping where each key is associated with exactly one value, and it allows **constant-time complexity (O(1))** for get, put, and remove operations on average. Let's break down its internal working in detail.
+
+### **1. Basic Structure of a HashMap**
+A **`HashMap`** in Java is backed by an array of **buckets** (or bins) where each bucket holds a linked list (or a tree in case of high collisions). Each bucket's index is calculated using the hash code of the key.
+
+- **Bucket**: A bucket is an index in the internal array where the key-value pair might be stored. A **hash function** is used to compute the index of the bucket from the key.
+- **Entry**: Each key-value pair is stored as an object of the `Entry` class (a.k.a. `Node` in newer versions). Each entry contains:
+  - **Key**
+  - **Value**
+  - **Hash code of the key**
+  - **Reference to the next entry** (in case of hash collisions, forming a linked list).
+
+### **2. How HashMap Works Internally**
+Let’s break down the internal steps involved in storing and retrieving data from a `HashMap`:
+
+#### **a. HashMap Structure (Buckets)**
+The **`HashMap`** has an internal array of **buckets**. By default, the array size is 16, but it can grow dynamically when the number of entries exceeds the threshold (usually 75% of the array capacity). Each bucket holds a linked list or tree of key-value pairs (collisions).
+
+#### **b. Hash Function**
+When a key-value pair is added to a `HashMap`, the **hash code** of the key is computed using the `hashCode()` method. The hash code is used to determine the **bucket index** where the key-value pair will be stored.
+
+- **Bucket Index Calculation**:
+  - The formula to calculate the index of the bucket is typically:
+    ```java
+    index = hash(key.hashCode()) % number_of_buckets
+    ```
+  - If the key has a good hash distribution, the index will likely spread the keys evenly across the buckets.
+  
+  However, Java `HashMap` also applies some additional techniques to reduce collisions, such as **bitwise manipulations** on the hash code.
+
+#### **c. Storing Data (put() method)**
+When you call the `put()` method to insert a new key-value pair:
+
+1. **Compute the hash code** of the key.
+2. **Determine the index** of the bucket using the hash code.
+3. **Check for collisions**:
+   - If the bucket is empty, the entry is inserted there.
+   - If there are already key-value pairs in that bucket (a collision), the **linked list** at that bucket index will be traversed to check if the key already exists.
+     - If the key already exists, the value is updated.
+     - If the key does not exist, the new entry is added to the end of the list.
+4. **Resize (if necessary)**:
+   - If the number of entries exceeds the threshold (capacity * load factor), the `HashMap` will **resize** (resize factor is typically 2x).
+   - During resizing, a new larger array is created, and all existing entries are rehashed and moved to the new array. This is a time-consuming operation (O(n)) but ensures efficient performance in the long run.
+
+#### **d. Retrieving Data (get() method)**
+To retrieve the value associated with a given key:
+
+1. **Compute the hash code** of the key.
+2. **Determine the bucket index** where the key should be located.
+3. **Search for the key** in the corresponding bucket:
+   - If there’s only one element in the bucket, it’s a straightforward match.
+   - If there are multiple elements (due to collisions), the linked list (or tree) is traversed to find the key.
+
+If the key is found, the corresponding value is returned. If not, `null` is returned.
+
+#### **e. Deleting Data (remove() method)**
+When a key-value pair is removed:
+
+1. **Compute the hash code** of the key.
+2. **Determine the bucket index** where the key-value pair might reside.
+3. **Search the bucket** for the key:
+   - If the key is found, the corresponding entry is removed from the linked list or tree.
+   - If there are multiple entries due to hash collisions, the list/tree is traversed to find the key.
+
+### **3. Collision Handling**
+A collision occurs when two keys have the same hash code and, therefore, map to the same bucket index.
+
+#### **Handling Collisions in HashMap**:
+- **Linked List** (before Java 8): If multiple keys have the same hash code, they are stored in a **linked list** at the same bucket.
+- **Red-Black Tree** (Java 8 and later): If the number of collisions at a bucket exceeds a threshold (usually 8), the linked list is converted into a **red-black tree** to improve lookup time from O(n) to O(log n).
+
+### **4. Load Factor and Capacity**
+- **Capacity**: The number of buckets in the `HashMap` array (default is 16).
+- **Load Factor**: A measure that determines when the `HashMap` should resize. The default load factor is 0.75, meaning the `HashMap` will resize when 75% of the current capacity is filled.
+- **Resize**: If the number of elements exceeds the load factor times the capacity, the `HashMap` will resize (typically double the capacity) and rehash all the entries to new bucket indices.
+
+### **5. Example of HashMap Internals**
+Here is a simple example of a `HashMap` with a key-value pair:
+
+```java
+import java.util.HashMap;
+
+public class HashMapExample {
+    public static void main(String[] args) {
+        HashMap<String, String> map = new HashMap<>();
+
+        // Adding key-value pairs to the HashMap
+        map.put("apple", "fruit");
+        map.put("carrot", "vegetable");
+        map.put("dog", "animal");
+
+        // Retrieving value associated with key "apple"
+        System.out.println(map.get("apple")); // Output: fruit
+
+        // Removing a key-value pair
+        map.remove("dog");
+
+        // Printing all entries
+        System.out.println(map);
+    }
+}
+```
+
+**Behind the Scenes**:
+- When `"apple"` is inserted, the hash code of `"apple"` is computed, and its corresponding bucket index is calculated. The key-value pair is stored at that index.
+- When `"dog"` is inserted, the hash code of `"dog"` is computed, and its bucket index is calculated similarly.
+- When `"apple"` is queried, its hash code is used to locate the bucket, and the corresponding value `"fruit"` is returned.
+- If a key already exists and a new value is inserted, the existing value is updated.
+
+### **6. Performance Considerations**
+- **Insertion**: Average **O(1)**, but can be **O(n)** when resizing.
+- **Lookup**: Average **O(1)**, but can degrade to **O(n)** in the worst case if all elements end up in the same bucket (though this is rare with good hash functions).
+- **Deletion**: Average **O(1)**, but can be **O(n)** in the worst case.
+  
+The overall performance of a `HashMap` depends on the quality of the hash function, the distribution of keys, the load factor, and how collisions are handled.
+
+### **7. Key Points to Remember**
+- **HashMap** does not maintain the order of keys, so the order of entries is not guaranteed to remain the same.
+- **Null values**: It allows one `null` key and multiple `null` values.
+- **Thread safety**: `HashMap` is **not thread-safe**. If you need thread-safe operations, you can use `Collections.synchronizedMap()` or `ConcurrentHashMap`.
+- **Rehashing**: If the number of elements exceeds the threshold (`capacity * load factor`), the `HashMap` will resize, which can be expensive, but is amortized over time.
+
+### **Conclusion**
+`HashMap` provides an efficient way to store key-value pairs using hashing. By using a hash function to map keys to bucket indices, it allows for fast retrieval and insertion. Handling collisions through linked lists or red-black trees ensures that performance remains good even when hash collisions occur. However, the order of the entries is not guaranteed, and resizing can be expensive when the number of elements grows significantly.

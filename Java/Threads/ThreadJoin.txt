@@ -1,0 +1,148 @@
+### **Thread `join()` Method in Java**
+
+The `join()` method in Java is used to ensure that one thread waits for the completion of another thread. When one thread calls the `join()` method on another thread, the calling thread will pause its execution until the thread on which `join()` was called completes its execution. This is particularly useful when you want to ensure that certain tasks are completed before proceeding with other tasks.
+
+### **Syntax**:
+```java
+public final void join() throws InterruptedException
+```
+
+- **`join()`**: Waits indefinitely for the thread to finish.
+- **`join(long millis)`**: Waits for the thread to finish for the specified amount of time (milliseconds).
+- **`join(long millis, int nanos)`**: Waits for the thread to finish for the specified amount of time (milliseconds + nanoseconds).
+
+### **How `join()` Works**:
+- The `join()` method blocks the calling thread until the thread on which it is invoked has completed.
+- If the calling thread is interrupted while waiting for another thread to finish, it will throw an `InterruptedException`.
+- If you want to give a timeout for the `join()`, you can use the version that accepts milliseconds and nanoseconds.
+
+### **Example of Using `join()`**:
+
+Let’s demonstrate the `join()` method with a simple example where the main thread waits for two child threads to finish before it proceeds.
+
+#### **Example Code**:
+```java
+class MyThread extends Thread {
+    private String threadName;
+
+    // Constructor to set thread name
+    public MyThread(String threadName) {
+        this.threadName = threadName;
+    }
+
+    @Override
+    public void run() {
+        try {
+            System.out.println(threadName + " started.");
+            Thread.sleep(2000);  // Simulate some work with sleep
+            System.out.println(threadName + " finished.");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        // Creating two threads
+        MyThread thread1 = new MyThread("Thread 1");
+        MyThread thread2 = new MyThread("Thread 2");
+
+        // Start the threads
+        thread1.start();
+        thread2.start();
+
+        // Use join() to make the main thread wait for thread1 and thread2 to finish
+        thread1.join();  // Main thread waits for thread1 to finish
+        thread2.join();  // Main thread waits for thread2 to finish
+
+        // Main thread proceeds only after both threads finish
+        System.out.println("Main thread finishing after both threads are completed.");
+    }
+}
+```
+
+#### **Explanation of Code**:
+1. **`MyThread` Class**: This class extends `Thread` and simulates a task by sleeping for 2 seconds. It prints messages before and after sleeping to indicate when it starts and finishes.
+2. **Main Method**:
+   - Two threads (`thread1` and `thread2`) are created.
+   - Both threads are started using `start()`.
+   - The main thread then calls `join()` on each of the threads, which means the main thread will wait for `thread1` to finish before it starts waiting for `thread2` to finish.
+   - After both threads finish, the main thread prints a message indicating that it has completed.
+
+#### **Expected Output**:
+```
+Thread 1 started.
+Thread 2 started.
+Thread 1 finished.
+Thread 2 finished.
+Main thread finishing after both threads are completed.
+```
+
+- First, `thread1` and `thread2` are both started.
+- The main thread will wait for both threads to finish, one after the other, using `join()`. This means the output from `thread1` will appear before `thread2`.
+- After both threads finish, the main thread will print its message.
+
+### **Why Use `join()`?**
+
+1. **Ensuring Sequential Execution**:
+   - If you want the main thread to wait for certain threads to finish before proceeding (e.g., collecting results from multiple threads before proceeding with further logic), `join()` ensures that the threads complete in the desired order.
+
+2. **Thread Synchronization**:
+   - `join()` is helpful when you need to synchronize threads or wait for certain tasks to complete before moving on to the next steps. It can be useful when multiple threads are performing independent tasks, and the main thread needs the results of those tasks before proceeding.
+
+### **Example with Timeout in `join()`**:
+
+You can also provide a timeout to `join()`, which will allow the calling thread to wait for a specified amount of time before continuing. If the thread finishes within that time, the calling thread will resume immediately; otherwise, it will wake up after the timeout period.
+
+```java
+class TimedThread extends Thread {
+    private String threadName;
+
+    public TimedThread(String threadName) {
+        this.threadName = threadName;
+    }
+
+    @Override
+    public void run() {
+        try {
+            System.out.println(threadName + " started.");
+            Thread.sleep(3000);  // Simulate some work with a sleep of 3 seconds
+            System.out.println(threadName + " finished.");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        // Creating a timed thread
+        TimedThread timedThread = new TimedThread("TimedThread");
+
+        // Start the thread
+        timedThread.start();
+
+        // Main thread waits for the timedThread to finish with a timeout of 2 seconds
+        timedThread.join(2000);  // Wait for 2 seconds
+
+        // After the timeout period, the main thread will proceed
+        System.out.println("Main thread proceeding after waiting for 2 seconds.");
+    }
+}
+```
+
+#### **Expected Output**:
+```
+TimedThread started.
+Main thread proceeding after waiting for 2 seconds.
+```
+
+- In this case, the main thread calls `join(2000)`, which waits for `timedThread` to finish for a maximum of 2 seconds.
+- Since `timedThread` sleeps for 3 seconds, after 2 seconds, the main thread continues without waiting for the thread to finish.
+
+### **Things to Keep in Mind When Using `join()`**:
+1. **`InterruptedException`**: The `join()` method can throw an `InterruptedException`, which must be handled, either by catching it or declaring it in the method signature.
+2. **Blocking**: When a thread calls `join()` on another thread, it blocks the calling thread. This could lead to a deadlock if you are not careful when joining multiple threads.
+3. **Timeout**: When using `join(long millis)`, it's possible that the thread may still not complete within the specified time, so the calling thread may resume anyway.
+4. **Order of Execution**: If you want to ensure that certain threads finish before others, use `join()` in the right order.
+
+### **Conclusion**:
+- The `join()` method is a very useful tool when you need to synchronize threads or ensure that certain threads complete before proceeding.
+- It allows you to wait for other threads to finish their work, and with the `join(long millis)` variant, you can even implement a timeout-based waiting mechanism.

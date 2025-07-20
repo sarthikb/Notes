@@ -1,0 +1,207 @@
+### `GROUP BY` and `HAVING` Clauses in SQL
+
+The `GROUP BY` and `HAVING` clauses are often used together in SQL to organize and filter data based on aggregated results. These clauses allow you to summarize data and apply conditions on aggregated results.
+
+### 1. **`GROUP BY` Clause**
+
+The `GROUP BY` clause is used to group rows that have the same values in specified columns into summary rows. It is typically used with aggregate functions (`SUM()`, `COUNT()`, `AVG()`, etc.) to perform calculations on each group of data.
+
+#### Syntax of `GROUP BY`:
+```sql
+SELECT column1, column2, aggregate_function(column3)
+FROM table_name
+GROUP BY column1, column2;
+```
+
+- **`column1`, `column2`**: Columns you want to group by.
+- **`aggregate_function(column3)`**: An aggregate function (e.g., `SUM()`, `AVG()`, `COUNT()`, etc.) applied to the column you want to aggregate.
+- **`GROUP BY`**: Groups the results based on the unique combinations of the specified columns.
+
+#### Example:
+
+Consider the following `sales` table:
+```sql
+CREATE TABLE sales (
+    sale_id INT PRIMARY KEY,
+    product_id INT,
+    store_id INT,
+    quantity INT,
+    sale_date DATE
+);
+```
+
+This table tracks individual sales transactions, including the product sold, the store that made the sale, and the quantity sold.
+
+To calculate the total sales quantity for each `product_id`, we can use `GROUP BY` to group the results by `product_id`.
+
+```sql
+SELECT product_id, SUM(quantity) AS total_sales
+FROM sales
+GROUP BY product_id;
+```
+
+- **Explanation**:
+  - The query groups the data by `product_id`.
+  - The `SUM(quantity)` function calculates the total quantity of each product sold.
+- **Output**:
+  The result might look like this:
+  
+| product_id | total_sales |
+|------------|-------------|
+| 1          | 200         |
+| 2          | 150         |
+| 3          | 300         |
+  
+This means product with `product_id = 1` had a total of 200 units sold, and product `2` had 150 units sold.
+
+### 2. **`HAVING` Clause**
+
+The `HAVING` clause is used to filter groups after the `GROUP BY` operation. It is similar to the `WHERE` clause but is applied **after** the grouping and aggregation has been performed. The `HAVING` clause is used to filter the results based on the aggregated data, while the `WHERE` clause filters rows before any aggregation.
+
+#### Syntax of `HAVING`:
+```sql
+SELECT column1, column2, aggregate_function(column3)
+FROM table_name
+GROUP BY column1, column2
+HAVING aggregate_function(column3) condition;
+```
+
+- **`HAVING`**: Filters the groups based on the aggregated values.
+
+#### Example:
+
+Let's extend the previous example and say we only want to see products that have sold more than 200 units.
+
+```sql
+SELECT product_id, SUM(quantity) AS total_sales
+FROM sales
+GROUP BY product_id
+HAVING SUM(quantity) > 200;
+```
+
+- **Explanation**:
+  - The query groups the data by `product_id` and calculates the total sales for each product.
+  - The `HAVING` clause filters the groups where the total quantity sold is greater than 200.
+- **Output**:
+  
+| product_id | total_sales |
+|------------|-------------|
+| 1          | 200         |
+| 3          | 300         |
+  
+Only products with a total sale greater than 200 units will be included in the result set. In this case, product 3 had 300 units sold, and product 1 had 200 units, so both are included in the result.
+
+### 3. **Combining `GROUP BY` and `HAVING`**
+
+The `GROUP BY` and `HAVING` clauses are often used together in SQL. First, you group data by specific columns, then you filter the groups based on conditions applied to the aggregated data.
+
+#### Scenario:
+
+Imagine you have an `orders` table that looks like this:
+
+```sql
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_amount DECIMAL(10, 2),
+    order_date DATE
+);
+```
+
+The table tracks orders, including the `customer_id`, `order_amount`, and `order_date` of each order.
+
+You want to find customers who have made more than 2 orders and whose total order amount exceeds $1000.
+
+#### Query:
+
+```sql
+SELECT customer_id, COUNT(order_id) AS order_count, SUM(order_amount) AS total_amount
+FROM orders
+GROUP BY customer_id
+HAVING COUNT(order_id) > 2 AND SUM(order_amount) > 1000;
+```
+
+- **Explanation**:
+  - The query groups the data by `customer_id` to calculate the total number of orders (`COUNT(order_id)`) and the total amount spent (`SUM(order_amount)`).
+  - The `HAVING` clause filters the results to only show customers who have made more than 2 orders and have a total order amount greater than $1000.
+  
+- **Output**:
+
+| customer_id | order_count | total_amount |
+|-------------|-------------|--------------|
+| 101         | 3           | 1500.00      |
+| 102         | 5           | 2200.00      |
+
+This shows that customer `101` made 3 orders with a total amount of $1500, and customer `102` made 5 orders with a total amount of $2200.
+
+### Key Points:
+
+- **`GROUP BY`**:
+  - Groups rows that have the same values in specified columns.
+  - It is used with aggregate functions (`COUNT()`, `SUM()`, `AVG()`, etc.) to aggregate data.
+  - `GROUP BY` happens **before** filtering in the query.
+  
+- **`HAVING`**:
+  - Filters the result of the `GROUP BY` operation.
+  - It is used **after** the aggregation has been performed, unlike `WHERE` which is used to filter rows before grouping.
+  - It works with aggregate functions (`SUM()`, `COUNT()`, etc.).
+
+### Examples with Output Details
+
+#### Example 1: Calculate the total amount spent by each customer and filter those with total spending greater than $500.
+
+```sql
+SELECT customer_id, SUM(order_amount) AS total_spent
+FROM orders
+GROUP BY customer_id
+HAVING SUM(order_amount) > 500;
+```
+
+- **Explanation**:
+  - The query groups the data by `customer_id` and sums the `order_amount` for each customer.
+  - The `HAVING` clause filters the groups where the total spending is greater than $500.
+- **Output**:
+
+| customer_id | total_spent |
+|-------------|-------------|
+| 101         | 600.00      |
+| 102         | 1200.00     |
+
+In this case, customers `101` and `102` spent more than $500, so their data is included in the result.
+
+#### Example 2: Count the number of orders for each customer and show only customers with more than 3 orders.
+
+```sql
+SELECT customer_id, COUNT(order_id) AS order_count
+FROM orders
+GROUP BY customer_id
+HAVING COUNT(order_id) > 3;
+```
+
+- **Explanation**:
+  - The query counts the number of orders for each customer.
+  - The `HAVING` clause filters the customers who have more than 3 orders.
+- **Output**:
+
+| customer_id | order_count |
+|-------------|-------------|
+| 102         | 5           |
+| 105         | 4           |
+
+Only customers with more than 3 orders are included in the result.
+
+---
+
+### Summary of `GROUP BY` and `HAVING`:
+
+1. **`GROUP BY`**: 
+   - Groups rows by the values in specified columns.
+   - Used with aggregate functions to perform calculations on grouped data.
+   - Filters rows **before** grouping.
+   
+2. **`HAVING`**: 
+   - Filters the result after grouping and aggregation.
+   - Can be used with aggregate functions (`COUNT()`, `SUM()`, `AVG()`, etc.).
+   - Filters groups **after** the `GROUP BY` operation.
+
+These clauses help you perform more complex queries and allow you to analyze data efficiently by grouping and filtering based on aggregates.

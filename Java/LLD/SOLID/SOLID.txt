@@ -1,0 +1,325 @@
+
+
+### 1. **Single Responsibility Principle (SRP)**
+
+#### **Definition:**
+A class should have only one reason to change, meaning that it should have only one job or responsibility.
+
+#### **Explanation:**
+When a class has more than one responsibility, it becomes more complex and difficult to modify. 
+Each responsibility should be encapsulated into a separate class. If a class has multiple reasons to change, a change to one responsibility could affect the others.
+
+#### **Example:**
+
+```java
+// Violating SRP
+class Employee {
+    private String name;
+    private double salary;
+    
+    public void calculateSalary() {
+        // Logic for calculating salary
+    }
+
+    public void saveToDatabase() {
+        // Logic for saving to database
+    }
+}
+
+// Following SRP
+class Employee {
+    private String name;
+    private double salary;
+
+    public double calculateSalary() {
+        // Logic for calculating salary
+        return salary;
+    }
+}
+
+class EmployeeDatabase {
+    public void save(Employee employee) {
+        // Logic for saving employee to database
+    }
+}
+```
+
+#### **Explanation:**
+In the first version, the `Employee` class violates the Single Responsibility Principle because it handles both business logic (salary calculation) and persistence (saving data to the database). 
+In the second version, we separate these concerns into distinct classes: `Employee` for business logic and `EmployeeDatabase` for handling persistence. Each class now has a single responsibility.
+
+---
+
+### 2. **Open/Closed Principle (OCP)**
+
+#### **Definition:**
+Software entities (classes, modules, functions, etc.) should be open for extension but closed for modification.
+
+#### **Explanation:**
+You should be able to add new functionality to a class without changing its existing code. 
+This can be achieved through inheritance or interfaces, enabling flexibility and reducing the risk of breaking existing functionality.
+
+#### **Example:**
+
+```java
+// Violating OCP
+class Rectangle {
+    public double width;
+    public double height;
+
+    public double area() {
+        return width * height;
+    }
+}
+
+class AreaCalculator {
+    public double calculateArea(Rectangle rectangle) {
+        return rectangle.area();
+    }
+}
+
+// Following OCP
+interface Shape {
+    double area();
+}
+
+class Rectangle implements Shape {
+    public double width;
+    public double height;
+
+    public double area() {
+        return width * height;
+    }
+}
+
+class Circle implements Shape {
+    public double radius;
+
+    public double area() {
+        return Math.PI * radius * radius;
+    }
+}
+
+class AreaCalculator {
+    public double calculateArea(Shape shape) {
+        return shape.area();
+    }
+}
+```
+
+#### **Explanation:**
+In the first example, if we wanted to calculate the area of a new shape, such as a `Circle`, we would have to modify the `AreaCalculator` class, which violates the Open/Closed Principle. 
+In the second example, we define a `Shape` interface and let each shape (like `Rectangle` or `Circle`) implement it. 
+The `AreaCalculator` class does not need modification to accommodate new shapes, thus it is closed for modification but open for extension.
+
+---
+
+### 3. **Liskov Substitution Principle (LSP)**
+
+#### **Definition:**
+Objects of a superclass should be replaceable with objects of its subclass without affecting the correctness of the program.
+
+#### **Explanation:**
+Subtypes must be substitutable for their base types. In other words, if you have a class that uses polymorphism, it should be able to work with any subclass without issues.
+
+#### **Example:**
+
+```java
+// Violating LSP
+class Bird {
+    public void fly() {
+        System.out.println("Flying");
+    }
+}
+
+class Ostrich extends Bird {
+    @Override
+    public void fly() {
+        // Ostriches can't fly, so this is incorrect behavior
+        throw new UnsupportedOperationException();
+    }
+}
+
+// Following LSP
+class Bird {
+    public void move() {
+        System.out.println("Moving");
+    }
+}
+
+class Sparrow extends Bird {
+    @Override
+    public void move() {
+        System.out.println("Flying");
+    }
+}
+
+class Ostrich extends Bird {
+    @Override
+    public void move() {
+        System.out.println("Running");
+    }
+}
+```
+
+#### **Explanation:**
+In the first example, `Ostrich` cannot fly, so overriding the `fly()` method breaks the Liskov Substitution Principle. 
+In the second example, we have made `Bird` a more general class with a `move()` method, and we handle different types of movement (flying, running) in the subclasses. Now, we can substitute any subclass of `Bird` without issues.
+
+---
+
+### 4. **Interface Segregation Principle (ISP)**
+
+#### **Definition:**
+No client should be forced to depend on methods it does not use.
+
+#### **Explanation:**
+Clients should not be required to implement interfaces they don’t use. It’s better to have smaller, more specific interfaces rather than a large, monolithic one.
+
+#### **Example:**
+
+```java
+// Violating ISP
+interface Worker {
+    void work();
+    void eat();
+}
+
+class Robot implements Worker {
+    @Override
+    public void work() {
+        System.out.println("Robot working");
+    }
+
+    @Override
+    public void eat() {
+        // Robots don't eat, so this is inappropriate
+        throw new UnsupportedOperationException();
+    }
+}
+
+class Human implements Worker {
+    @Override
+    public void work() {
+        System.out.println("Human working");
+    }
+
+    @Override
+    public void eat() {
+        System.out.println("Human eating");
+    }
+}
+
+// Following ISP
+interface Workable {
+    void work();
+}
+
+interface Eatable {
+    void eat();
+}
+
+class Robot implements Workable {
+    @Override
+    public void work() {
+        System.out.println("Robot working");
+    }
+}
+
+class Human implements Workable, Eatable {
+    @Override
+    public void work() {
+        System.out.println("Human working");
+    }
+
+    @Override
+    public void eat() {
+        System.out.println("Human eating");
+    }
+}
+```
+
+#### **Explanation:**
+In the first example, the `Robot` class is forced to implement the `eat()` method, even though robots don't eat, which violates the Interface Segregation Principle. 
+In the second example, we split the interface into two smaller ones: `Workable` and `Eatable`. Now, `Robot` only implements `Workable`, and `Human` implements both `Workable` and `Eatable`.
+
+---
+
+### 5. **Dependency Inversion Principle (DIP)**
+
+#### **Definition:**
+High-level modules should not depend on low-level modules. Both should depend on abstractions. Additionally, abstractions should not depend on details. Details should depend on abstractions.
+
+#### **Explanation:**
+This principle encourages using interfaces or abstract classes to decouple the high-level logic from low-level implementations. It allows for easier changes in behavior without affecting higher-level modules.
+
+#### **Example:**
+
+```java
+// Violating DIP
+class LightBulb {
+    public void turnOn() {
+        System.out.println("Light is ON");
+    }
+    
+    public void turnOff() {
+        System.out.println("Light is OFF");
+    }
+}
+
+class Switch {
+    private LightBulb bulb;
+
+    public Switch(LightBulb bulb) {
+        this.bulb = bulb;
+    }
+
+    public void operate() {
+        // Direct dependency on the concrete LightBulb class
+        bulb.turnOn();
+    }
+}
+
+// Following DIP
+interface Switchable {
+    void turnOn();
+    void turnOff();
+}
+
+class LightBulb implements Switchable {
+    public void turnOn() {
+        System.out.println("Light is ON");
+    }
+    
+    public void turnOff() {
+        System.out.println("Light is OFF");
+    }
+}
+
+class Switch {
+    private Switchable device;
+
+    public Switch(Switchable device) {
+        this.device = device;
+    }
+
+    public void operate() {
+        device.turnOn();
+    }
+}
+```
+
+#### **Explanation:**
+In the first example, the `Switch` class directly depends on the concrete `LightBulb` class. 
+If we want to control a different device (like a fan), we would need to modify the `Switch` class. 
+In the second example, we introduce a `Switchable` interface, so the `Switch` class is no longer dependent on a specific device but instead on any device that implements `Switchable`. 
+This makes the `Switch` class open to using any device that fits the interface.
+
+---
+
+### Summary of SOLID Principles:
+- **SRP**: A class should only have one responsibility.
+- **OCP**: Classes should be open for extension but closed for modification.
+- **LSP**: Subtypes should be substitutable for their base types.
+- **ISP**: Clients should not be forced to depend on interfaces they don't use.
+- **DIP**: High-level modules should not depend on low-level modules, but both should depend on abstractions.

@@ -1,0 +1,178 @@
+### Session Scope in Spring Boot
+
+**Definition**: The session scope in Spring creates a new instance of a bean for each HTTP session. 
+This means that a single instance of the bean is maintained for the duration of a user's session within the web application. 
+The bean is created when the session is established and destroyed when the session expires or is invalidated.
+
+**Lifecycle**:
+1. A new bean instance is created when the user’s HTTP session is initiated.
+2. The bean is available throughout the lifetime of the session, accessible by all requests made within that session.
+3. The bean is destroyed when the session ends.
+
+### Characteristics of Session Scope
+
+- **Session-specific Instances**: Each user session has its own instance of the bean, allowing for data that is specific to that session.
+- **Longer Lifespan**: The bean lives as long as the user's session remains active, making it suitable for storing user-specific data.
+- **Stateful**: Session-scoped beans are often stateful, as they can store information across multiple requests from the same user.
+
+### Use Case for Session Scope
+
+Session scope is particularly useful in scenarios where you want to maintain data across multiple requests from a user. Common use cases include:
+
+1. **User Preferences**: Storing user-specific settings or preferences throughout their session.
+2. **Shopping Cart**: Maintaining the contents of a shopping cart in an e-commerce application across multiple requests.
+3. **Authentication Information**: Keeping track of user authentication details and session states.
+
+### Example: Session Scope
+
+Let's illustrate session scope with a scenario involving a shopping cart in an e-commerce application.
+
+**Step 1: Define the Session-scoped Bean**
+
+**ShoppingCart.java**:
+
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+public class ShoppingCart {
+    private List<String> items = new ArrayList<>();
+
+    public void addItem(String item) {
+        items.add(item);
+    }
+
+    public List<String> getItems() {
+        return items;
+    }
+
+    public void clearCart() {
+        items.clear();
+    }
+}
+```
+
+**Step 2: Define a Configuration Class**
+
+**AppConfig.java**:
+
+```java
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
+
+@Configuration
+public class AppConfig {
+
+    @Bean
+    @Scope("session")
+    public ShoppingCart shoppingCart() {
+        return new ShoppingCart();
+    }
+}
+```
+
+**Step 3: Create a Controller to Handle Cart Operations**
+
+**CartController.java**:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/cart")
+public class CartController {
+
+    private final ShoppingCart shoppingCart;
+
+    @Autowired
+    public CartController(ShoppingCart shoppingCart) {
+        this.shoppingCart = shoppingCart;
+    }
+
+    @PostMapping("/add")
+    public String addItem(@RequestParam String item) {
+        shoppingCart.addItem(item);
+        return "Item added: " + item;
+    }
+
+    @GetMapping("/items")
+    public List<String> getItems() {
+        return shoppingCart.getItems();
+    }
+
+    @PostMapping("/clear")
+    public String clearCart() {
+        shoppingCart.clearCart();
+        return "Cart cleared";
+    }
+}
+```
+
+### Demonstrating the Session Behavior
+
+With this setup, a new `ShoppingCart` instance will be created for each user session. 
+
+**Example Requests**:
+
+1. **Adding Items**:
+
+```bash
+curl -X POST "http://localhost:8080/cart/add?item=Apple"
+curl -X POST "http://localhost:8080/cart/add?item=Banana"
+```
+
+2. **Retrieving Items**:
+
+```bash
+curl -X GET "http://localhost:8080/cart/items"
+```
+
+### Expected Output
+
+For the `GET` request to retrieve items after adding "Apple" and "Banana", the output will be:
+
+```
+["Apple", "Banana"]
+```
+
+3. **Clearing the Cart**:
+
+```bash
+curl -X POST "http://localhost:8080/cart/clear"
+```
+
+The output will be:
+
+```
+Cart cleared
+```
+
+4. **Retrieving Items Again**:
+
+After clearing, if you check the items again:
+
+```bash
+curl -X GET "http://localhost:8080/cart/items"
+```
+
+The output will be:
+
+```
+[]
+```
+
+### Summary
+
+**Benefits of Session Scope**:
+- **User-Specific Data**: Each session has its own instance, allowing for data that is relevant only to that user.
+- **State Preservation**: Useful for maintaining state across multiple requests within the same session.
+
+**Drawbacks**:
+- **Memory Usage**: Each session may hold data in memory, potentially leading to higher memory usage with many active sessions.
+- **Session Management Complexity**: Developers must manage session expiration and invalidation appropriately.
+
+Using session-scoped beans is advantageous in web applications that require maintaining user-specific information across multiple interactions, such as managing user preferences or a shopping cart in e-commerce systems.

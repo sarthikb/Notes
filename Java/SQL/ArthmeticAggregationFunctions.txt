@@ -1,0 +1,159 @@
+### Arithmetic and Aggregation Functions in SQL
+
+Arithmetic and aggregation functions in SQL are used to perform mathematical operations or aggregate data across rows. These functions are very useful for summarizing and analyzing data.
+
+#### Common Arithmetic Functions:
+1. **`+` (Addition)**
+2. **`-` (Subtraction)**
+3. **`*` (Multiplication)**
+4. **`/` (Division)**
+5. **`MOD()`** (Modulus - returns the remainder of division)
+
+#### Common Aggregation Functions:
+1. **`COUNT()`** - Counts the number of rows.
+2. **`SUM()`** - Sums the values of a column.
+3. **`AVG()`** - Returns the average value of a numeric column.
+4. **`MIN()`** - Returns the minimum value of a column.
+5. **`MAX()`** - Returns the maximum value of a column.
+
+### Example Database Schema
+
+Let's take an example of a database schema for a simple e-commerce store with **`orders`**, **`products`**, and **`order_items`** tables. This will allow us to calculate various arithmetic and aggregation operations like the total revenue, average price per product, and more.
+
+#### 1. **Create Table - `products`**
+
+```sql
+CREATE TABLE products (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(100),
+    price DECIMAL(10, 2)
+);
+```
+- **Explanation**: 
+  - `product_id`: Unique identifier for each product.
+  - `product_name`: Name of the product.
+  - `price`: Price of the product (in decimal format for accuracy).
+
+#### 2. **Create Table - `orders`**
+
+```sql
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_date DATE
+);
+```
+- **Explanation**:
+  - `order_id`: Unique identifier for each order.
+  - `customer_id`: The customer who placed the order.
+  - `order_date`: The date the order was placed.
+
+#### 3. **Create Table - `order_items`**
+
+```sql
+CREATE TABLE order_items (
+    order_item_id INT PRIMARY KEY,
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
+```
+- **Explanation**:
+  - `order_item_id`: Unique identifier for each item in an order.
+  - `order_id`: Links to the `orders` table, indicating which order the item belongs to.
+  - `product_id`: Links to the `products` table, indicating which product was ordered.
+  - `quantity`: The number of units of the product ordered.
+
+---
+
+### Arithmetic and Aggregation Functions Example
+
+Now that we have the database schema, let's look at how we can use arithmetic and aggregation functions in SQL queries to perform calculations.
+
+#### 1. **Calculating Total Revenue for All Orders**
+
+To calculate the **total revenue**, we will sum up the total price of all ordered items. The total price for each item is calculated as `price * quantity`.
+
+```sql
+SELECT SUM(p.price * oi.quantity) AS total_revenue
+FROM order_items oi
+JOIN products p ON oi.product_id = p.product_id;
+```
+- **Explanation**:
+  - We use a `JOIN` to link the `order_items` table with the `products` table.
+  - The price of each product is multiplied by the quantity of that product in each order (`p.price * oi.quantity`).
+  - The `SUM()` function is used to aggregate the total revenue across all items in all orders.
+
+#### 2. **Calculating the Average Order Value**
+
+To calculate the **average order value**, we can calculate the total revenue per order and then average those values.
+
+```sql
+SELECT AVG(total_order_value) AS avg_order_value
+FROM (
+    SELECT SUM(p.price * oi.quantity) AS total_order_value
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.product_id
+    GROUP BY oi.order_id
+) AS order_totals;
+```
+- **Explanation**:
+  - We calculate the total order value for each order using `SUM(p.price * oi.quantity)`, grouped by `order_id`.
+  - We then calculate the `AVG()` of the total order values, giving the average order value across all orders.
+
+#### 3. **Finding the Minimum and Maximum Order Value**
+
+To find the **minimum** and **maximum** order values, we can use the `MIN()` and `MAX()` functions, similar to the average calculation but focusing on extremes.
+
+```sql
+SELECT 
+    MIN(total_order_value) AS min_order_value,
+    MAX(total_order_value) AS max_order_value
+FROM (
+    SELECT SUM(p.price * oi.quantity) AS total_order_value
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.product_id
+    GROUP BY oi.order_id
+) AS order_totals;
+```
+- **Explanation**:
+  - Similar to the previous example, we calculate the total order value for each order.
+  - We then use `MIN()` and `MAX()` to find the lowest and highest order values across all orders.
+
+#### 4. **Counting the Total Number of Products Sold**
+
+To count the total number of products sold across all orders, we will use the `SUM()` function with `quantity` from the `order_items` table.
+
+```sql
+SELECT SUM(quantity) AS total_products_sold
+FROM order_items;
+```
+- **Explanation**:
+  - The `SUM(quantity)` will add up the quantity of all products sold across all orders.
+  - This gives the total number of products sold.
+
+#### 5. **Finding the Average Price of Products**
+
+To calculate the **average price** of all products in the `products` table, we can use the `AVG()` function on the `price` column.
+
+```sql
+SELECT AVG(price) AS avg_product_price
+FROM products;
+```
+- **Explanation**:
+  - The `AVG(price)` function calculates the average price of all products in the `products` table.
+
+---
+
+### Summary of Arithmetic and Aggregation Functions
+
+1. **`SUM()`**: Adds up the values in a column (e.g., calculating total revenue, total products sold).
+2. **`AVG()`**: Calculates the average of a column (e.g., average order value, average product price).
+3. **`MIN()`**: Finds the smallest value in a column (e.g., minimum order value).
+4. **`MAX()`**: Finds the largest value in a column (e.g., maximum order value).
+5. **`COUNT()`**: Counts the number of rows (e.g., counting the number of orders, products sold).
+6. **Arithmetic operations (`+`, `-`, `*`, `/`)**: Perform mathematical operations on columns (e.g., calculating total price for an order).
+
+These functions are essential for analyzing and summarizing data in SQL, especially when working with sales, financial, or any other numerical data.

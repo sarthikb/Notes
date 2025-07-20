@@ -1,0 +1,172 @@
+In Spring, `@Primary` and `@Qualifier` are annotations used to resolve ambiguity when multiple beans of the same type exist in the application context. 
+They help the Spring IoC container decide which bean to inject when there are multiple candidates.
+
+### 1. `@Primary`
+
+- **Purpose**: Marks a bean as the primary candidate when multiple beans of the same type are available for injection. If a bean is annotated with `@Primary`, 
+it will be chosen by default unless another bean is explicitly specified using `@Qualifier`.
+- **Usage**: You typically use `@Primary` when you have a preferred implementation of an interface or class.
+
+#### Example of `@Primary`
+
+```java
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
+
+// Interface
+interface PaymentService {
+    void processPayment();
+}
+
+// First Implementation
+@Component
+@Primary
+class CreditCardPaymentService implements PaymentService {
+    @Override
+    public void processPayment() {
+        System.out.println("Processing payment through Credit Card.");
+    }
+}
+
+// Second Implementation
+@Component
+class PayPalPaymentService implements PaymentService {
+    @Override
+    public void processPayment() {
+        System.out.println("Processing payment through PayPal.");
+    }
+}
+```
+
+### 2. `@Qualifier`
+
+- **Purpose**: Specifies which bean should be injected when multiple candidates are available. It allows you to disambiguate by naming the specific bean you want to use.
+- **Usage**: Use `@Qualifier` when you need to inject a specific bean that is not marked as `@Primary`.
+
+#### Example of `@Qualifier`
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+
+@Service
+class CheckoutService {
+    private final PaymentService paymentService;
+
+    @Autowired
+    public CheckoutService(@Qualifier("payPalPaymentService") PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
+
+    public void completeCheckout() {
+        paymentService.processPayment();
+    }
+}
+```
+
+### Step 3: Main Application Class
+
+Now, create a main application class to run the Spring Boot application.
+
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
+
+@SpringBootApplication
+public class MyApplication {
+    public static void main(String[] args) {
+        ApplicationContext context = SpringApplication.run(MyApplication.class, args);
+        CheckoutService checkoutService = context.getBean(CheckoutService.class);
+        checkoutService.completeCheckout();
+    }
+}
+```
+
+### Expected Output
+
+When you run the application, the output will be:
+
+```
+Processing payment through PayPal.
+```
+
+### Differences Between `@Primary` and `@Qualifier`
+
+| Feature           | `@Primary`                                 | `@Qualifier`                           |
+|-------------------|--------------------------------------------|----------------------------------------|
+| **Purpose**       | Specifies a default bean to use           | Specifies a specific bean to use      |
+| **Use Case**      | When one bean is generally preferred       | When you need to specify which bean to inject |
+| **Injection Method** | No additional configuration needed; applied globally | Requires the name of the bean as a parameter |
+| **Ambiguity Resolution** | Resolves ambiguity by preference       | Resolves ambiguity by explicitly naming the desired bean |
+
+### Conclusion
+
+In Spring, `@Primary` and `@Qualifier` serve distinct but complementary roles in managing multiple beans of the same type. Use `@Primary` when you have a default implementation that should be preferred, and use `@Qualifier` when you need to inject a specific implementation. Understanding how to use these annotations effectively can help you manage your Spring applications more flexibly and clearly.
+
+
+You're correct! In Spring, when using the `@Qualifier` annotation, you need to specify the exact name of the bean you want to inject. 
+By default, Spring uses the class name (with the first letter in lowercase) as the bean name unless a custom name is specified.
+
+### Specifying the Qualifier Name
+
+To clarify, if you want to use `@Qualifier` to inject the `PayPalPaymentService`, you should ensure that it has a proper bean name, either by using the default naming convention or by explicitly naming it.
+
+#### Example with Explicit Bean Name
+
+Let's modify the `PayPalPaymentService` to provide an explicit bean name using the `@Component` annotation:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+// Interface
+interface PaymentService {
+    void processPayment();
+}
+
+// First Implementation
+@Component
+@Primary
+class CreditCardPaymentService implements PaymentService {
+    @Override
+    public void processPayment() {
+        System.out.println("Processing payment through Credit Card.");
+    }
+}
+
+// Second Implementation with Explicit Name
+@Component("paypalPaymentService") // Explicit bean name
+class PayPalPaymentService implements PaymentService {
+    @Override
+    public void processPayment() {
+        System.out.println("Processing payment through PayPal.");
+    }
+}
+```
+
+### Using the Qualifier
+
+In the `CheckoutService`, you would then reference it correctly:
+
+```java
+@Service
+class CheckoutService {
+    private final PaymentService paymentService;
+
+    @Autowired
+    public CheckoutService(@Qualifier("paypalPaymentService") PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
+
+    public void completeCheckout() {
+        paymentService.processPayment();
+    }
+}
+```
+
+### Conclusion
+
+To summarize, when using `@Qualifier`, you must ensure that you reference the correct bean name, whether it's the default (lowercase class name) or an explicitly defined name. This ensures that Spring can correctly resolve the dependency during injection. Thank you for pointing out the need for clarity on this aspect!

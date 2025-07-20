@@ -1,0 +1,109 @@
+In Java, every thread has a priority that indicates its relative importance in comparison to other threads. Thread priority is used by the **Thread Scheduler** to decide which thread should be given CPU time. Threads with higher priority are more likely to be scheduled for execution before threads with lower priority, but it's important to note that thread priority is not a strict guarantee, and the exact behavior may vary depending on the underlying operating system and JVM implementation.
+
+### **Thread Priority in Java**
+
+Java provides a set of constants in the `Thread` class to define thread priority:
+- `Thread.MIN_PRIORITY` = 1
+- `Thread.NORM_PRIORITY` = 5 (default priority)
+- `Thread.MAX_PRIORITY` = 10
+
+You can set a thread's priority using the `Thread.setPriority(int priority)` method, where the `priority` is an integer value between `Thread.MIN_PRIORITY` and `Thread.MAX_PRIORITY`. If the priority is not set explicitly, the default priority is `Thread.NORM_PRIORITY` (which is 5).
+
+### **How Thread Priority Works**
+- Threads with higher priority have a higher chance of being scheduled by the thread scheduler.
+- However, thread priority does not guarantee immediate execution. The thread scheduler may still decide to give lower-priority threads CPU time depending on the underlying operating system's scheduling policies (e.g., Round Robin, FIFO).
+- On some platforms, thread priority may be ignored by the JVM, so the behavior could differ across systems.
+
+### **Example: Demonstrating Thread Priority**
+
+Let’s demonstrate how thread priority works by creating multiple threads with different priorities.
+
+```java
+class MyThread extends Thread {
+    private int threadNumber;
+    
+    // Constructor to initialize the thread number
+    public MyThread(int threadNumber) {
+        this.threadNumber = threadNumber;
+    }
+
+    @Override
+    public void run() {
+        try {
+            // Each thread prints its thread number with some delay
+            System.out.println("Thread #" + threadNumber + " with priority " + getPriority() + " started.");
+            Thread.sleep(1000); // Simulate some work
+            System.out.println("Thread #" + threadNumber + " with priority " + getPriority() + " finished.");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+public class ThreadPriorityExample {
+    public static void main(String[] args) throws InterruptedException {
+        // Create threads with different priorities
+        MyThread thread1 = new MyThread(1);
+        MyThread thread2 = new MyThread(2);
+        MyThread thread3 = new MyThread(3);
+        MyThread thread4 = new MyThread(4);
+        
+        // Set thread priorities
+        thread1.setPriority(Thread.MIN_PRIORITY); // Priority 1
+        thread2.setPriority(Thread.NORM_PRIORITY); // Default priority (5)
+        thread3.setPriority(Thread.MAX_PRIORITY); // Priority 10
+        thread4.setPriority(Thread.NORM_PRIORITY); // Default priority (5)
+        
+        // Start all threads
+        thread1.start();
+        thread2.start();
+        thread3.start();
+        thread4.start();
+        
+        // Wait for threads to complete before ending the main thread
+        thread1.join();
+        thread2.join();
+        thread3.join();
+        thread4.join();
+    }
+}
+```
+
+### **Explanation of the Code:**
+1. **MyThread Class**: Each thread in this example prints its thread number and priority, then simulates work by sleeping for 1 second.
+2. **Thread Priorities**: In the `main()` method:
+   - `thread1` is set to the minimum priority (`Thread.MIN_PRIORITY` = 1).
+   - `thread2` and `thread4` are set to the default priority (`Thread.NORM_PRIORITY` = 5).
+   - `thread3` is set to the maximum priority (`Thread.MAX_PRIORITY` = 10).
+3. **Thread Execution**: Each thread is started with `start()`, and the `join()` method is used to ensure that the main thread waits for all threads to finish before it terminates.
+
+### **Expected Output (on most systems)**:
+
+```
+Thread #3 with priority 10 started.
+Thread #2 with priority 5 started.
+Thread #1 with priority 1 started.
+Thread #4 with priority 5 started.
+Thread #3 with priority 10 finished.
+Thread #2 with priority 5 finished.
+Thread #4 with priority 5 finished.
+Thread #1 with priority 1 finished.
+```
+
+### **Explanation of Output:**
+- Threads with higher priority (e.g., `thread3` with priority 10) are more likely to start first, but there is no guarantee.
+- The threads are scheduled based on their priority, but the exact order might vary slightly depending on the operating system's thread scheduler. In general, a thread with **higher priority** has more chances of running before threads with lower priority.
+
+### **Important Points to Consider**:
+1. **Thread Priority is Not a Guarantee**: While higher-priority threads may get CPU time before lower-priority threads, the exact execution order depends on the JVM and OS. On some systems, thread priority might be ignored altogether.
+   
+2. **Platform Dependency**: The effectiveness of thread priority depends on the platform's thread scheduling mechanism. On some operating systems, threads are scheduled based on a time-sharing mechanism where priority does not significantly impact the execution order. On others, such as real-time systems, thread priority might have a more noticeable effect.
+
+3. **Use Caution with Priorities**: Relying too much on thread priority can lead to poor performance or inefficiencies in a program. It’s better to use other synchronization mechanisms (like thread pools, `ExecutorService`, etc.) for managing concurrency in most scenarios.
+
+### **When to Use Thread Priority**:
+- Thread priority is useful when you want to give certain tasks higher importance in a multi-threaded application (e.g., handling UI events, time-sensitive tasks).
+- However, it should not be overused, as it can make your application dependent on specific scheduling behaviors, which may not be portable across platforms.
+
+### **Conclusion**:
+Thread priority in Java allows you to influence the scheduling of threads, but it is not a strict mechanism and should be used with caution. While setting priorities can help in certain cases, modern concurrency management using thread pools, `ExecutorService`, and proper synchronization is generally a better approach to handling multiple threads.

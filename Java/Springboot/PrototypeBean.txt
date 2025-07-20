@@ -1,0 +1,155 @@
+### Prototype Scope in Spring Boot
+
+**Definition**: In Spring, the prototype scope means that a new instance of the bean is created every time it is requested from the application context. 
+Unlike singleton beans, which are shared, each prototype bean is independent.
+
+**Lifecycle**:
+1. A new bean instance is created whenever the bean is requested.
+2. The Spring container does not manage the complete lifecycle of the prototype beans beyond their instantiation.
+3. Once created, the bean is eligible for garbage collection when there are no references to it.
+
+### Characteristics of Prototype Scope
+
+- **Unique Instances**: Each request for the bean returns a new instance.
+- **Non-managed Lifecycle**: The Spring container is responsible only for creating the bean instance; it does not manage its destruction.
+- **State Isolation**: Useful for beans that need to maintain state without interference from other instances.
+
+### Use Case for Prototype Scope
+
+Prototype scope is particularly useful in scenarios where you need a fresh instance of a class every time it is needed. Common use cases include:
+
+1. **Form Data Handling**: When dealing with user input forms, you might want a new instance of a form object for each submission.
+2. **Thread-specific Data**: For services that are called in a multi-threaded environment, where each thread requires its own instance of a bean.
+3. **Stateful Objects**: When you have objects that maintain internal state, and you want each client to have its own instance.
+
+### Example: Prototype Scope
+
+Let’s demonstrate the prototype scope with a scenario involving user session data for a web application.
+
+**Step 1: Define the Prototype Bean**
+
+**UserSession.java**:
+
+```java
+public class UserSession {
+    private String username;
+    private String sessionId;
+
+    public UserSession(String username, String sessionId) {
+        this.username = username;
+        this.sessionId = sessionId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+}
+```
+
+**Step 2: Define a Configuration Class**
+
+**AppConfig.java**:
+
+```java
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
+
+@Configuration
+public class AppConfig {
+
+    @Bean
+    @Scope("prototype")
+    public UserSession userSession() {
+        return new UserSession("defaultUser", generateSessionId());
+    }
+
+    private String generateSessionId() {
+        // Simulate session ID generation
+        return "session-" + System.currentTimeMillis();
+    }
+}
+```
+
+**Step 3: Using the Prototype Bean in a Service**
+
+**SessionService.java**:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class SessionService {
+
+    private final AppConfig appConfig;
+
+    @Autowired
+    public SessionService(AppConfig appConfig) {
+        this.appConfig = appConfig;
+    }
+
+    public UserSession createNewSession(String username) {
+        UserSession userSession = appConfig.userSession();
+        // Initialize session with specific username
+        userSession = new UserSession(username, userSession.getSessionId());
+        return userSession;
+    }
+}
+```
+
+**Step 4: Demonstrating the Prototype Behavior**
+
+**Main Application**:
+
+```java
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+
+@SpringBootApplication
+public class PrototypeScopeApplication implements CommandLineRunner {
+
+    public static void main(String[] args) {
+        SpringApplication.run(PrototypeScopeApplication.class, args);
+    }
+
+    @Autowired
+    private SessionService sessionService;
+
+    @Override
+    public void run(String... args) {
+        UserSession session1 = sessionService.createNewSession("User1");
+        UserSession session2 = sessionService.createNewSession("User2");
+
+        System.out.println("Session 1: Username = " + session1.getUsername() + ", Session ID = " + session1.getSessionId());
+        System.out.println("Session 2: Username = " + session2.getUsername() + ", Session ID = " + session2.getSessionId());
+    }
+}
+```
+
+### Output
+
+When running the application, you will see output similar to:
+
+```
+Session 1: Username = User1, Session ID = session-1633567825487
+Session 2: Username = User2, Session ID = session-1633567825492
+```
+
+### Summary
+
+**Benefits of Prototype Scope**:
+- **Instance Isolation**: Each bean instance is separate, allowing independent state management.
+- **Flexibility**: Suitable for stateful beans that must not share data across instances.
+
+**Drawbacks**:
+- **Memory Overhead**: Each request creates a new instance, which may increase memory consumption.
+- **Management Complexity**: The developer must manage the lifecycle of the prototype beans, as Spring does not clean them up.
+
+Using prototype beans effectively helps in scenarios where isolation of state and independent lifecycle management are necessary, particularly in complex applications dealing with user sessions or form data handling.

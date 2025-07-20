@@ -1,0 +1,117 @@
+If you want to dynamically choose a bean based on incoming requests without using a property file, you can implement a strategy pattern directly in your controller. 
+This allows you to select the appropriate bean at runtime based on request parameters, headers, or other request attributes.
+
+### Example: Dynamic Payment Processor Selection Based on Request
+
+Let's extend the previous example to choose a payment processor based on a request parameter rather than a property file.
+
+### Step 1: Define the Payment Interface and Implementations
+
+We will use the same `PaymentProcessor` interface and its implementations (`PayPalProcessor` and `CreditCardProcessor`) as before.
+
+### Step 2: Modify the Service to Accept Processor Type
+
+**PaymentService.java**:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class PaymentService {
+
+    private final PayPalProcessor payPalProcessor;
+    private final CreditCardProcessor creditCardProcessor;
+
+    @Autowired
+    public PaymentService(PayPalProcessor payPalProcessor, CreditCardProcessor creditCardProcessor) {
+        this.payPalProcessor = payPalProcessor;
+        this.creditCardProcessor = creditCardProcessor;
+    }
+
+    public void makePayment(double amount, String processorType) {
+        PaymentProcessor paymentProcessor;
+
+        switch (processorType.toLowerCase()) {
+            case "paypal":
+                paymentProcessor = payPalProcessor;
+                break;
+            case "creditcard":
+                paymentProcessor = creditCardProcessor;
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown payment processor type: " + processorType);
+        }
+
+        paymentProcessor.processPayment(amount);
+    }
+}
+```
+
+### Step 3: Update the Controller to Use Processor Type from Request
+
+**PaymentController.java**:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/payment")
+public class PaymentController {
+
+    private final PaymentService paymentService;
+
+    @Autowired
+    public PaymentController(PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
+
+    @PostMapping("/process")
+    public String processPayment(@RequestParam double amount, @RequestParam String processorType) {
+        paymentService.makePayment(amount, processorType);
+        return "Payment processed!";
+    }
+}
+```
+
+### Step 4: Testing the Application
+
+Now, you can make requests to the `/payment/process` endpoint, specifying the payment processor type directly in the request.
+
+**Example Requests**:
+
+1. **Using PayPal**:
+
+```bash
+curl -X POST "http://localhost:8080/payment/process?amount=100.00&processorType=paypal"
+```
+
+2. **Using Credit Card**:
+
+```bash
+curl -X POST "http://localhost:8080/payment/process?amount=100.00&processorType=creditcard"
+```
+
+### Expected Output
+
+- For the PayPal request, you should see:
+
+```
+Processing payment of $100.0 using PayPal.
+```
+
+- For the Credit Card request, you should see:
+
+```
+Processing payment of $100.0 using Credit Card.
+```
+
+### Summary
+
+**Key Points**:
+- **Dynamic Decision-Making**: By passing the payment processor type as a request parameter, you can make decisions dynamically based on incoming requests.
+- **Flexibility**: This approach allows you to easily extend the application to support additional payment processors by just adding more cases to the switch statement.
+- **Simplified Configuration**: You don't need to manage properties or external configurations; everything is handled directly in the controller and service.
+
+This method provides a straightforward and flexible way to choose beans based on the context of the request without relying on external configurations or annotations like `@Primary` or `@Qualifier`.

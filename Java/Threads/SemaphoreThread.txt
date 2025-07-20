@@ -1,0 +1,118 @@
+### Semaphore in Java
+
+A **Semaphore** is a synchronization mechanism that controls access to a shared resource by maintaining a set of permits. A **semaphore** is initialized with a certain number of permits, and each thread that wants to access the shared resource must acquire a permit. If no permits are available, the thread is blocked until a permit becomes available.
+
+Semaphores are useful when you want to limit the number of threads that can access a particular resource or perform a specific task concurrently.
+
+In Java, **`Semaphore`** is part of the `java.util.concurrent` package and can be used for this purpose. It works as a counter that manages permits. The **acquire()** method decreases the permit count and blocks the thread if no permits are available. The **release()** method increases the permit count, potentially allowing a waiting thread to proceed.
+
+### Key Characteristics of Semaphore:
+- **Permits**: The number of available permits determines how many threads can acquire the semaphore concurrently.
+- **Blocking/Non-blocking**: When no permits are available, threads can either block until a permit is released (blocking behavior) or attempt to acquire a permit within a specified time (non-blocking behavior).
+- **Fairness**: You can configure a semaphore to ensure **fairness**, meaning that the threads acquire the semaphore in the order they requested it. This is done by passing `true` to the constructor of `Semaphore`.
+
+### Key Methods:
+- **`acquire()`**: Acquires a permit from the semaphore. If no permit is available, the thread is blocked until a permit is released.
+- **`release()`**: Releases a permit, making it available for other threads to acquire.
+- **`availablePermits()`**: Returns the number of available permits at the time of the call.
+- **`tryAcquire()`**: Tries to acquire a permit, but does not block. It returns `true` if a permit was successfully acquired, otherwise `false`.
+- **`acquireUninterruptibly()`**: Acquires a permit without being interrupted (i.e., it does not throw `InterruptedException`).
+
+### Example of Semaphore Usage
+
+Let's demonstrate a basic example where a limited number of threads can access a shared resource simultaneously.
+
+```java
+import java.util.concurrent.Semaphore;
+
+class SharedResource {
+    private final Semaphore semaphore;
+
+    public SharedResource(int maxThreads) {
+        // Semaphore initialized with 'maxThreads' number of permits
+        semaphore = new Semaphore(maxThreads, true); // 'true' ensures fair ordering of threads
+    }
+
+    public void accessResource(int threadId) {
+        try {
+            // Acquire a permit to access the resource
+            System.out.println("Thread " + threadId + " attempting to acquire a permit...");
+            semaphore.acquire();
+            System.out.println("Thread " + threadId + " has acquired a permit!");
+
+            // Simulate resource access
+            System.out.println("Thread " + threadId + " is accessing the resource.");
+            Thread.sleep(2000);  // Simulate some processing time
+
+            // Release the permit after using the resource
+            System.out.println("Thread " + threadId + " is releasing the permit.");
+            semaphore.release();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println("Thread " + threadId + " was interrupted.");
+        }
+    }
+}
+
+public class SemaphoreExample {
+    public static void main(String[] args) {
+        SharedResource resource = new SharedResource(3);  // Only 3 threads can access at the same time
+
+        // Create and start 5 threads that will try to access the shared resource
+        for (int i = 1; i <= 5; i++) {
+            final int threadId = i;
+            new Thread(() -> resource.accessResource(threadId)).start();
+        }
+    }
+}
+```
+
+### Explanation of the Code:
+1. **SharedResource Class**: This class simulates a shared resource with a **`Semaphore`** that allows only a limited number of threads to access it concurrently. The semaphore is initialized with `maxThreads`, which determines how many threads can access the resource simultaneously.
+
+   - **`accessResource(int threadId)`**: This method simulates the action of accessing the resource. It first acquires a permit from the semaphore, performs some processing (simulated by `Thread.sleep()`), and then releases the permit once done.
+
+2. **Semaphore Initialization**: The semaphore is initialized with a maximum number of permits (`maxThreads`). This determines how many threads can simultaneously access the resource. In this example, it’s set to `3`, meaning that only 3 threads can access the shared resource at any given time.
+
+3. **Main Method**: We create 5 threads, and each thread will attempt to acquire a permit to access the shared resource. Since there are only 3 permits, only 3 threads can access the resource at the same time, and the remaining threads will have to wait.
+
+### Expected Output:
+
+```
+Thread 1 attempting to acquire a permit...
+Thread 1 has acquired a permit!
+Thread 1 is accessing the resource.
+Thread 2 attempting to acquire a permit...
+Thread 2 has acquired a permit!
+Thread 2 is accessing the resource.
+Thread 3 attempting to acquire a permit...
+Thread 3 has acquired a permit!
+Thread 3 is accessing the resource.
+Thread 4 attempting to acquire a permit...
+Thread 5 attempting to acquire a permit...
+Thread 1 is releasing the permit.
+Thread 4 has acquired a permit!
+Thread 4 is accessing the resource.
+Thread 2 is releasing the permit.
+Thread 5 has acquired a permit!
+Thread 5 is accessing the resource.
+...
+```
+
+### Key Points:
+- **Semaphore Initialization**: The `Semaphore` is initialized with a specific number of permits, which controls how many threads can access the resource at the same time.
+- **Concurrency Control**: By using the semaphore, we can control how many threads can access the shared resource concurrently, helping avoid overloading the resource or ensuring that only a specific number of threads are allowed to proceed.
+- **Fairness**: The constructor `new Semaphore(3, true)` ensures that threads acquire the semaphore in a fair manner (FIFO order). If `false` were passed, the threads could acquire the semaphore in an arbitrary order.
+
+### Use Cases for Semaphore:
+1. **Limiting Concurrent Access**: Semaphore is ideal when you have a limited resource (e.g., a pool of database connections, limited hardware resources) and you want to control how many threads can access it concurrently.
+2. **Traffic Control**: It can be used in situations where you want to manage traffic to a specific section, such as limiting the number of threads accessing a shared network resource.
+3. **Thread Pool Management**: Semaphores are often used to control the number of threads accessing a set of resources, such as a fixed-size thread pool.
+
+### Summary:
+- **Semaphore** allows you to control access to a shared resource by using a fixed number of permits.
+- **acquire()** blocks the thread if no permits are available, and **release()** makes a permit available for other threads.
+- You can configure fairness in a semaphore to ensure threads acquire permits in a fair, FIFO order.
+- It's useful for managing limited resources and controlling concurrency.
+
+Let me know if you need further clarification or have any other questions!

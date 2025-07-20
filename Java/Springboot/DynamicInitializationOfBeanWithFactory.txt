@@ -1,0 +1,176 @@
+Dynamic initialization of beans in Spring can be managed using custom factory methods or condition-based logic, especially when you want to avoid conflicts without relying on `@Primary` or `@Qualifier` annotations. 
+This can be particularly useful when you have multiple beans of the same type and need to decide which one to use at runtime.
+
+### Use Case: Dynamic Bean Initialization
+
+Let's consider an example where you have different types of payment processors (e.g., `PayPal` and `CreditCard`) and you want to initialize one of them dynamically based on a configuration property. Instead of using `@Primary` or `@Qualifier`, we will use a factory method to achieve this.
+
+### Step 1: Define the Payment Interface and Implementations
+
+**PaymentProcessor.java** (Interface):
+
+```java
+public interface PaymentProcessor {
+    void processPayment(double amount);
+}
+```
+
+**PayPalProcessor.java**:
+
+```java
+import org.springframework.stereotype.Component;
+
+@Component
+public class PayPalProcessor implements PaymentProcessor {
+    @Override
+    public void processPayment(double amount) {
+        System.out.println("Processing payment of $" + amount + " using PayPal.");
+    }
+}
+```
+
+**CreditCardProcessor.java**:
+
+```java
+import org.springframework.stereotype.Component;
+
+@Component
+public class CreditCardProcessor implements PaymentProcessor {
+    @Override
+    public void processPayment(double amount) {
+        System.out.println("Processing payment of $" + amount + " using Credit Card.");
+    }
+}
+```
+
+### Step 2: Define a Configuration Class with a Factory Method
+
+Here, we'll create a factory method that dynamically chooses the appropriate bean based on a configuration property.
+
+**AppConfig.java**:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class AppConfig {
+
+    @Value("${payment.processor.type}")
+    private String paymentProcessorType;
+
+    @Autowired
+    private PayPalProcessor payPalProcessor;
+
+    @Autowired
+    private CreditCardProcessor creditCardProcessor;
+
+    @Bean
+    public PaymentProcessor paymentProcessor() {
+        switch (paymentProcessorType.toLowerCase()) {
+            case "paypal":
+                return payPalProcessor;
+            case "creditcard":
+                return creditCardProcessor;
+            default:
+                throw new IllegalArgumentException("Unknown payment processor type: " + paymentProcessorType);
+        }
+    }
+}
+```
+
+### Step 3: Application Properties Configuration
+
+You will need to specify the desired payment processor in your application properties.
+
+**application.properties**:
+
+```properties
+payment.processor.type=paypal  # Change to 'creditcard' to use CreditCardProcessor
+```
+
+### Step 4: Create a Service to Use the Payment Processor
+
+**PaymentService.java**:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class PaymentService {
+
+    private final PaymentProcessor paymentProcessor;
+
+    @Autowired
+    public PaymentService(PaymentProcessor paymentProcessor) {
+        this.paymentProcessor = paymentProcessor;
+    }
+
+    public void makePayment(double amount) {
+        paymentProcessor.processPayment(amount);
+    }
+}
+```
+
+### Step 5: Create a Controller to Trigger Payments
+
+**PaymentController.java**:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/payment")
+public class PaymentController {
+
+    private final PaymentService paymentService;
+
+    @Autowired
+    public PaymentController(PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
+
+    @PostMapping("/process")
+    public String processPayment(@RequestParam double amount) {
+        paymentService.makePayment(amount);
+        return "Payment processed!";
+    }
+}
+```
+
+### Step 6: Testing the Application
+
+Start the Spring Boot application and use a tool like Postman or `curl` to trigger the payment processing.
+
+**Example Request**:
+
+```bash
+curl -X POST "http://localhost:8080/payment/process?amount=100.00"
+```
+
+### Expected Output
+
+Depending on the configured payment processor in `application.properties`, you should see output like:
+
+- If `payment.processor.type=paypal`:
+```
+Processing payment of $100.0 using PayPal.
+```
+
+- If `payment.processor.type=creditcard`:
+```
+Processing payment of $100.0 using Credit Card.
+```
+
+### Summary
+
+**Key Points**:
+- **Dynamic Initialization**: By using a factory method within the configuration class, you can dynamically choose which bean to instantiate based on external configuration without using `@Primary` or `@Qualifier`.
+- **Flexible Design**: This approach allows for easily changing the behavior of your application based on configuration, promoting cleaner code and better separation of concerns.
+- **Error Handling**: The example includes error handling for unknown processor types, ensuring robustness.
+
+This method provides a flexible way to handle bean conflicts and dynamic initialization based on application requirements.

@@ -1,0 +1,270 @@
+Certainly! Below, I'll provide detailed examples for each of the commonly used collectors in the Java Streams API. Each example will demonstrate how to use the collector and show the expected output.
+
+---
+
+### 1. **`toList()`**: Collecting elements into a `List`
+
+```java
+import java.util.*;
+import java.util.stream.*;
+
+public class Example {
+    public static void main(String[] args) {
+        List<Integer> nums = Arrays.asList(1, 2, 3, 4, 5);
+        List<Integer> result = nums.stream().collect(Collectors.toList());
+        System.out.println(result);
+    }
+}
+```
+
+**Output**:
+```
+[1, 2, 3, 4, 5]
+```
+
+### 2. **`toSet()`**: Collecting elements into a `Set` (removes duplicates)
+
+```java
+import java.util.*;
+import java.util.stream.*;
+
+public class Example {
+    public static void main(String[] args) {
+        List<Integer> nums = Arrays.asList(1, 2, 2, 3, 4, 4, 5);
+        Set<Integer> result = nums.stream().collect(Collectors.toSet());
+        System.out.println(result);
+    }
+}
+```
+
+**Output**:
+```
+[1, 2, 3, 4, 5]
+```
+
+### 3. **`toMap()`**: Collecting elements into a `Map`
+
+```java
+import java.util.*;
+import java.util.stream.*;
+
+public class Example {
+    public static void main(String[] args) {
+        List<String> words = Arrays.asList("apple", "banana", "cherry", "date");
+        Map<Integer, String> result = words.stream()
+            .collect(Collectors.toMap(String::length, Function.identity()));
+        System.out.println(result);
+    }
+}
+```
+
+**Output**:
+```
+{5=apple, 6=banana, 7=cherry, 4=date}
+```
+
+Explanation: The map keys are the lengths of the strings, and the values are the strings themselves.
+
+### 4. **`joining()`**: Concatenating elements into a `String`
+
+```java
+import java.util.*;
+import java.util.stream.*;
+
+public class Example {
+    public static void main(String[] args) {
+        List<String> words = Arrays.asList("apple", "banana", "cherry");
+        String result = words.stream().collect(Collectors.joining(", ", "[", "]"));
+        System.out.println(result);
+    }
+}
+```
+
+**Output**:
+```
+[apple, banana, cherry]
+```
+
+Explanation: This joins the words, separated by `", "`, and wraps the result in square brackets.
+
+### 5. **`groupingBy()`**: Grouping elements by a classifier function
+
+```java
+import java.util.*;
+import java.util.stream.*;
+
+public class Example {
+    public static void main(String[] args) {
+        List<String> words = Arrays.asList("apple", "banana", "cherry", "date", "apricot");
+        Map<Integer, List<String>> result = words.stream()
+            .collect(Collectors.groupingBy(String::length));
+        System.out.println(result);
+    }
+}
+```
+
+**Output**:
+```
+{5=[apple, date], 6=[banana], 7=[cherry], 8=[apricot]}
+```
+
+Explanation: Words are grouped by their length.
+
+### 6. **`partitioningBy()`**: Partitioning elements into two groups
+
+```java
+import java.util.*;
+import java.util.stream.*;
+
+public class Example {
+    public static void main(String[] args) {
+        List<Integer> nums = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8);
+        Map<Boolean, List<Integer>> result = nums.stream()
+            .collect(Collectors.partitioningBy(num -> num % 2 == 0));
+        System.out.println(result);
+    }
+}
+```
+
+**Output**:
+```
+{false=[1, 3, 5, 7], true=[2, 4, 6, 8]}
+```
+
+Explanation: The numbers are partitioned into two groups: even (`true` key) and odd (`false` key).
+
+### 7. **`counting()`**: Counting the number of elements
+
+```java
+import java.util.*;
+import java.util.stream.*;
+
+public class Example {
+    public static void main(String[] args) {
+        List<Integer> nums = Arrays.asList(1, 2, 3, 4, 5);
+        long count = nums.stream().collect(Collectors.counting());
+        System.out.println(count);
+    }
+}
+```
+
+**Output**:
+```
+5
+```
+
+Explanation: The `counting()` collector returns the number of elements in the stream.
+
+### 8. **`summarizingInt()`**: Collecting statistics for `int` values
+
+```java
+import java.util.*;
+import java.util.stream.*;
+
+public class Example {
+    public static void main(String[] args) {
+        List<Integer> nums = Arrays.asList(1, 2, 3, 4, 5);
+        IntSummaryStatistics stats = nums.stream()
+            .collect(Collectors.summarizingInt(Integer::intValue));
+        System.out.println(stats);
+    }
+}
+```
+
+**Output**:
+```
+IntSummaryStatistics{count=5, sum=15, min=1, average=3.000000, max=5}
+```
+
+Explanation: The `summarizingInt()` collector provides statistics like count, sum, min, average, and max.
+
+### 9. **`reducing()`**: Reducing elements to a single value
+
+```java
+import java.util.*;
+import java.util.stream.*;
+
+public class Example {
+    public static void main(String[] args) {
+        List<Integer> nums = Arrays.asList(1, 2, 3, 4, 5);
+        Optional<Integer> sum = nums.stream().collect(Collectors.reducing(Integer::sum));
+        sum.ifPresent(System.out::println);
+    }
+}
+```
+
+**Output**:
+```
+15
+```
+
+Explanation: The `reducing()` collector combines the elements using the specified binary operator. In this case, the sum of the integers.
+
+### 10. **`mapping()`**: Mapping elements before collecting
+
+```java
+import java.util.*;
+import java.util.stream.*;
+
+public class Example {
+    public static void main(String[] args) {
+        List<String> words = Arrays.asList("apple", "banana", "cherry");
+        Map<Integer, List<String>> result = words.stream()
+            .collect(Collectors.groupingBy(String::length, 
+                    Collectors.mapping(String::toUpperCase, Collectors.toList())));
+        System.out.println(result);
+    }
+}
+```
+
+**Output**:
+```
+{5=[APPLE], 6=[BANANA], 7=[CHERRY]}
+```
+
+Explanation: The `mapping()` collector is used to transform the elements (convert them to uppercase in this case) before performing a `groupingBy()` operation.
+
+### 11. **`flatMapping()`**: Flattening nested collections
+
+```java
+import java.util.*;
+import java.util.stream.*;
+
+public class Example {
+    public static void main(String[] args) {
+        List<List<String>> nestedWords = Arrays.asList(
+            Arrays.asList("apple", "banana"),
+            Arrays.asList("cherry", "date"),
+            Arrays.asList("apricot", "blueberry")
+        );
+        List<String> result = nestedWords.stream()
+            .flatMap(Collection::stream)  // Flatten the nested list
+            .collect(Collectors.toList());
+        System.out.println(result);
+    }
+}
+```
+
+**Output**:
+```
+[apple, banana, cherry, date, apricot, blueberry]
+```
+
+Explanation: `flatMapping()` is not directly available in `Collectors`, but `flatMap()` is commonly used to flatten nested collections before collecting them. In this case, it flattens a list of lists into a single list.
+
+---
+
+### Summary of Key Collectors:
+1. **`toList()`**: Collects to a `List`.
+2. **`toSet()`**: Collects to a `Set` (removes duplicates).
+3. **`toMap()`**: Collects to a `Map`.
+4. **`joining()`**: Joins elements into a `String`.
+5. **`groupingBy()`**: Groups elements by a classifier function.
+6. **`partitioningBy()`**: Partitions elements into two groups.
+7. **`counting()`**: Counts the number of elements.
+8. **`summarizing*()`**: Collects statistics (e.g., `summarizingInt()`).
+9. **`reducing()`**: Reduces elements to a single value (e.g., sum, product).
+10. **`mapping()`**: Transforms elements before collecting.
+11. **`flatMapping()`**: Flattens nested collections before collecting.
+
+These examples demonstrate how each collector works with a stream and what output you can expect. You can mix and match these collectors to perform more complex operations when working with Java streams.

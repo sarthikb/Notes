@@ -1,0 +1,144 @@
+In Spring Boot, **Inversion of Control (IoC)** is a fundamental principle that promotes loose coupling and easier manageability of application components. 
+IoC is primarily achieved through **Dependency Injection (DI)**, where the control of creating and managing object dependencies is transferred from the application code to the Spring container.
+
+### Key Concepts of IoC
+
+1. **IoC Container**: The core of the Spring Framework, responsible for managing the lifecycle and configuration of application objects (beans).
+2. **Beans**: Objects that are instantiated, assembled, and managed by the Spring IoC container.
+3. **Dependency Injection**: The process of providing an object with its dependencies rather than the object creating them itself.
+
+### Benefits of IoC
+
+- **Loose Coupling**: Reduces the dependencies between components, making them easier to modify and test.
+- **Easier Testing**: Allows for easier unit testing by enabling mock or stub dependencies.
+- **Configuration Flexibility**: Beans can be configured via XML or annotations, making it easy to change behavior without modifying code.
+
+### How IoC Works in Spring Boot
+
+1. **Define Beans**: Using annotations or XML to define the beans.
+2. **Configure Dependencies**: Specify dependencies for each bean.
+3. **Use the Application Context**: The Spring container manages the lifecycle and instantiation of the beans.
+
+### Example of IoC in Spring Boot
+
+Let's walk through a simple example of IoC in a Spring Boot application.
+
+#### Step 1: Set Up Your Spring Boot Application
+
+Make sure you have Spring Boot set up in your project. You can use Spring Initializr to create a new project with the required dependencies.
+
+#### Step 2: Define Your Service and Dependency
+
+Create a simple service that depends on another component.
+
+```java
+import org.springframework.stereotype.Component;
+
+// Dependency class
+@Component
+public class NotificationService {
+    public void sendNotification(String message) {
+        System.out.println("Notification sent: " + message);
+    }
+}
+```
+
+Next, create a service that will use `NotificationService`.
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+// Main service class that uses the dependency
+@Service
+public class UserService {
+
+    private final NotificationService notificationService;
+
+    @Autowired // Constructor injection
+    public UserService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
+    public void registerUser(String username) {
+        // Simulate user registration logic
+        System.out.println("User registered: " + username);
+        notificationService.sendNotification("Welcome, " + username + "!");
+    }
+}
+```
+
+#### Step 3: Create a Controller
+
+Now, let's create a REST controller to trigger the user registration process.
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+// Controller to handle user registration requests
+@RestController
+public class UserController {
+
+    private final UserService userService;
+
+    @Autowired // Constructor injection
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    @GetMapping("/register")
+    public String register(@RequestParam String username) {
+        userService.registerUser(username);
+        return "User registration initiated for: " + username;
+    }
+}
+```
+
+#### Step 4: Main Application Class
+
+Finally, create the main application class to run your Spring Boot application.
+
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class MyApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+}
+```
+
+### How It Works
+
+1. **IoC Container Initialization**: When the application starts, the Spring Boot application context initializes the IoC container.
+  
+2. **Bean Creation**: 
+   - The `NotificationService` and `UserService` classes are marked with `@Component` and `@Service`, respectively. The container scans for these annotations and creates beans for them.
+
+3. **Dependency Injection**:
+   - The `UserService` requires a `NotificationService` to function. The `@Autowired` annotation on the constructor instructs Spring to inject an instance of `NotificationService` into `UserService`.
+   - Similarly, the `UserController` requires a `UserService`, which is injected automatically.
+
+4. **Using the Application**:
+   - When you make a GET request to `http://localhost:8080/register?username=John`, the `UserController` triggers the `registerUser` method in `UserService`.
+   - The `UserService` then sends a notification using `NotificationService`.
+
+### Expected Output
+
+When you run the application and access the registration endpoint, the output will look like this:
+
+```
+User registered: John
+Notification sent: Welcome, John!
+```
+
+### Conclusion
+
+Inversion of Control (IoC) is a core concept in Spring that promotes loose coupling and easier management of application components. 
+By using Dependency Injection, Spring Boot enables developers to focus on business logic while the framework handles the lifecycle and dependencies of objects. 
+This leads to cleaner, more maintainable code and enhances testability.

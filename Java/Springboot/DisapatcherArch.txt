@@ -1,0 +1,83 @@
+
+### Overview of Spring Boot Dispatcher Architecture
+
+1. **Spring Boot Basics**:
+   - Spring Boot is an extension of the Spring framework, designed to simplify the setup and development of new Spring applications.
+   - It provides production-ready features and embedded server support.
+
+2. **DispatcherServlet**:
+   - The core component of Spring's web framework.
+   - Acts as the front controller for handling all incoming HTTP requests.
+   - It is registered in the web application context and is responsible for routing requests to appropriate handlers (controllers).
+
+### Key Components of Dispatcher Architecture
+
+1. **Request Handling Flow**:
+   - **Incoming Request**: When an HTTP request is made, it first reaches the `DispatcherServlet`.
+   - **Handler Mapping**: The `DispatcherServlet` uses handler mappings to determine which controller method should handle the request. It checks the URL and HTTP method against the defined mappings.
+   - **Handler Adapter**: Once a suitable controller is found, the `DispatcherServlet` uses a handler adapter to invoke the controller method.
+
+2. **Controllers**:
+   - These are annotated classes (usually with `@RestController` or `@Controller`) that contain methods for handling specific requests.
+   - Controller methods can return various types of responses, including views (for web apps) or JSON/XML (for REST APIs).
+
+3. **View Resolvers**:
+   - For applications returning views, the `DispatcherServlet` delegates the view rendering to a view resolver (like `InternalResourceViewResolver`).
+   - View resolvers determine which view to render based on the model returned by the controller.
+
+4. **Exception Handling**:
+   - The `@ControllerAdvice` annotation can be used to handle exceptions across all controllers globally.
+   - The `DispatcherServlet` will route exceptions to the appropriate handler methods.
+
+5. **Interceptors**:
+   - Interceptors (via `HandlerInterceptor`) can be defined to perform pre-processing and post-processing of requests. They can be used for tasks such as logging, authentication, and modifying the model before reaching the view.
+
+6. **Filters**:
+   - Servlet filters can be used for tasks that apply to all requests, such as logging, authentication, and request/response manipulation.
+
+### Configuration
+
+- **Spring Boot Starter Web**: To enable web functionality, include the `spring-boot-starter-web` dependency in your project.
+- **Application Properties**: You can configure various aspects of your application through the `application.properties` or `application.yml` file.
+
+### Example Flow
+
+1. **Client makes a request**: 
+   ```
+   GET /api/users
+   ```
+   
+2. **DispatcherServlet intercepts the request**.
+3. **Handler Mapping** identifies the appropriate controller:
+   ```java
+   @GetMapping("/api/users")
+   public List<User> getUsers() {
+       return userService.findAll();
+   }
+   ```
+
+4. **Handler Adapter invokes the controller method**.
+5. **Response is prepared** (e.g., JSON) and sent back to the client.
+
+### Advantages of Using DispatcherServlet
+
+- **Centralized Request Handling**: All requests go through a single entry point.
+- **Extensibility**: Easy to add new components like interceptors, filters, and view resolvers.
+- **Separation of Concerns**: Controllers, services, and repositories are well-separated, promoting clean architecture.
+
+### Common Interview Questions
+
+1. **What is the role of `DispatcherServlet`?**
+   - It acts as the front controller, routing requests to the appropriate handlers.
+
+2. **How do you define a controller in Spring Boot?**
+   - Using `@RestController` or `@Controller` annotations.
+
+3. **What are handler mappings and how do they work?**
+   - They map incoming requests to controller methods based on the request URL and method.
+
+4. **Explain the difference between `@Controller` and `@RestController`.**
+   - `@Controller` is used for MVC applications, returning views, while `@RestController` returns data directly (typically JSON).
+
+5. **What is the purpose of `@ControllerAdvice`?**
+   - It allows you to handle exceptions across all controllers globally.

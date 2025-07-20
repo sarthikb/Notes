@@ -1,0 +1,235 @@
+SQL (Structured Query Language) uses different data types to define the nature of data that can be stored in a database. These data types help specify what kind of values are allowed in a column, which can help ensure data integrity and proper storage.
+
+Here’s an overview of common SQL data types with explanations and examples:
+
+### 1. **Numeric Data Types**
+
+Numeric data types are used to store numbers.
+
+- **INT (or INTEGER)**  
+  - Used to store integer values (whole numbers), without decimals.
+  - Example: `INT` can store values like `-1000`, `0`, `500`.
+  
+  **Example:**
+  ```sql
+  CREATE TABLE Employees (
+      EmployeeID INT,
+      Age INT
+  );
+  ```
+
+- **DECIMAL(p, s) or NUMERIC(p, s)**
+  - Stores exact numeric values with a defined precision and scale.
+    - `p` is the total number of digits (precision).
+    - `s` is the number of digits to the right of the decimal point (scale).
+  - Example: `DECIMAL(5, 2)` can store values like `123.45` or `99.99`.
+  
+  **Example:**
+  ```sql
+  CREATE TABLE Products (
+      ProductID INT,
+      Price DECIMAL(10, 2)
+  );
+  ```
+
+- **FLOAT / REAL**
+  - Stores approximate numeric values with floating-point precision.
+  - `FLOAT` can store decimal numbers with high precision, while `REAL` is a single-precision floating-point number (lower precision).
+  
+  **Example:**
+  ```sql
+  CREATE TABLE Measurements (
+      ProductID INT,
+      Weight FLOAT
+  );
+  ```
+
+### 2. **Character Data Types**
+
+These data types are used to store strings or textual data.
+
+- **CHAR(n)**  
+  - Fixed-length character data type. The length `n` is defined, and any string shorter than `n` will be padded with spaces.
+  - Example: `CHAR(5)` will store exactly 5 characters like `'Apple'` or `'Ban  '` (note the padding).
+
+  **Example:**
+  ```sql
+  CREATE TABLE Customers (
+      CustomerID INT,
+      Name CHAR(50)
+  );
+  ```
+
+- **VARCHAR(n)**
+  - Variable-length character data type. The length `n` is the maximum number of characters, but it will only store the required number of characters, saving space.
+  - Example: `VARCHAR(100)` can store up to 100 characters like `'John'` or `'Alexis'`.
+  
+  **Example:**
+  ```sql
+  CREATE TABLE Orders (
+      OrderID INT,
+      OrderDescription VARCHAR(255)
+  );
+  ```
+
+- **TEXT**
+  - Used for very large amounts of text data.
+  - Example: `TEXT` can store large documents or long textual data like `Loren ipsum...`.
+
+  **Example:**
+  ```sql
+  CREATE TABLE BlogPosts (
+      PostID INT,
+      Content TEXT
+  );
+  ```
+
+### 3. **Date and Time Data Types**
+
+These data types are used to store dates and times.
+
+- **DATE**
+  - Stores a date value in the format `YYYY-MM-DD`.
+  - Example: `DATE` can store values like `2024-12-14`.
+
+  **Example:**
+  ```sql
+  CREATE TABLE Events (
+      EventID INT,
+      EventDate DATE
+  );
+  ```
+
+- **TIME**
+  - Stores a time value in the format `HH:MM:SS`.
+  - Example: `TIME` can store values like `14:30:00`.
+
+  **Example:**
+  ```sql
+  CREATE TABLE WorkSchedule (
+      ScheduleID INT,
+      StartTime TIME
+  );
+  ```
+
+- **DATETIME / TIMESTAMP**
+  - Stores both date and time values in the format `YYYY-MM-DD HH:MM:SS`.
+  - Example: `DATETIME` can store values like `2024-12-14 15:30:00`.
+  
+  **Example:**
+  ```sql
+  CREATE TABLE Logs (
+      LogID INT,
+      LogTimestamp DATETIME
+  );
+  ```
+
+- **YEAR**
+  - Stores a year in a `4-digit` format `YYYY`.
+  - Example: `YEAR` can store values like `2024`.
+
+  **Example:**
+  ```sql
+  CREATE TABLE Movies (
+      MovieID INT,
+      ReleaseYear YEAR
+  );
+  ```
+
+### 4. **Boolean Data Type**
+
+Used to store boolean values (TRUE or FALSE).
+
+- **BOOLEAN**
+  - Represents `TRUE` or `FALSE`.
+  - Example: `BOOLEAN` can store `TRUE` or `FALSE` values.
+
+  **Example:**
+  ```sql
+  CREATE TABLE Users (
+      UserID INT,
+      IsActive BOOLEAN
+  );
+  ```
+
+### 5. **Binary Data Types**
+
+These data types are used for storing binary data like images, files, or multimedia.
+
+- **BINARY(n)**
+  - Fixed-length binary data type.
+  - Example: `BINARY(8)` stores exactly 8 bytes of data.
+  
+  **Example:**
+  ```sql
+  CREATE TABLE Files (
+      FileID INT,
+      FileData BINARY(512)
+  );
+  ```
+
+- **VARBINARY(n)**
+  - Variable-length binary data type. It allows for a maximum of `n` bytes.
+  - Example: `VARBINARY(255)` can store up to 255 bytes of binary data.
+  
+  **Example:**
+  ```sql
+  CREATE TABLE Images (
+      ImageID INT,
+      ImageData VARBINARY(1024)
+  );
+  ```
+
+- **BLOB (Binary Large Object)**
+  - Stores large binary data (e.g., images, videos).
+  - Example: `BLOB` can store large binary objects like images.
+
+  **Example:**
+  ```sql
+  CREATE TABLE AudioFiles (
+      FileID INT,
+      AudioData BLOB
+  );
+  ```
+
+### 6. **Other Data Types**
+
+- **UUID (Universally Unique Identifier)**
+  - Used to store a unique identifier (usually 128-bit value).
+  - Example: `UUID` is used in distributed systems to ensure uniqueness across different databases.
+  
+  **Example:**
+  ```sql
+  CREATE TABLE Devices (
+      DeviceID UUID,
+      DeviceName VARCHAR(100)
+  );
+  ```
+
+- **ENUM**
+  - Used to store a predefined set of values. It is useful when the column values are constrained to a specific list.
+  - Example: `ENUM('Male', 'Female', 'Other')` can be used to store gender.
+  
+  **Example:**
+  ```sql
+  CREATE TABLE Users (
+      UserID INT,
+      Gender ENUM('Male', 'Female', 'Other')
+  );
+  ```
+
+- **SET**
+  - Similar to `ENUM`, but can store multiple values from a predefined list.
+  - Example: `SET('Red', 'Blue', 'Green')` can store one or more of these values.
+
+  **Example:**
+  ```sql
+  CREATE TABLE Products (
+      ProductID INT,
+      Colors SET('Red', 'Blue', 'Green')
+  );
+  ```
+
+### Conclusion
+
+SQL offers a rich set of data types that allow you to store a wide variety of data efficiently. Selecting the correct data type is critical for optimizing storage and ensuring data integrity. The examples above provide a clear view of how these types are used in real-world applications.

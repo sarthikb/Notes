@@ -1,0 +1,106 @@
+In Spring Boot, both `@Controller` and `@RestController` are annotations used to define web controllers, 
+but they serve different purposes and have distinct behaviors. 
+
+### Overview of `@Controller` and `@RestController`
+
+1. **@Controller**:
+   - It is a stereotype annotation that indicates a class serves the role of a controller in the MVC (Model-View-Controller) pattern.
+   - It is typically used for serving web pages (HTML) and requires views to be rendered (like JSP, Thymeleaf, etc.).
+   - It returns a view name (string) that is resolved by a view resolver.
+
+2. **@RestController**:
+   - It is a specialized version of `@Controller` that combines `@Controller` and `@ResponseBody`.
+   - It is used for creating RESTful web services.
+   - It directly returns data (e.g., JSON or XML) instead of a view name. This means the response body is automatically serialized into the specified format.
+
+### Detailed Example
+
+#### Using `@Controller`
+
+**Step 1: Create a Controller with `@Controller`**
+
+```java
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@Controller
+public class HomeController {
+
+    @GetMapping("/home")
+    public String home(Model model) {
+        model.addAttribute("message", "Welcome to the Home Page!");
+        return "home"; // Returns the view name
+    }
+}
+```
+
+**Step 2: Create a Thymeleaf Template**
+
+Assuming you are using Thymeleaf, create a file named `home.html` in `src/main/resources/templates`:
+
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Home</title>
+</head>
+<body>
+    <h1 th:text="${message}"></h1>
+</body>
+</html>
+```
+
+**Step 3: Application Configuration**
+
+Make sure to include the Thymeleaf dependency in your `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-thymeleaf</artifactId>
+</dependency>
+```
+
+**Step 4: Running the Application**
+
+When you run the application and navigate to `http://localhost:8080/home`, the browser will display the message "Welcome to the Home Page!" rendered as HTML.
+
+#### Using `@RestController`
+
+**Step 1: Create a Controller with `@RestController`**
+
+```java
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class ApiController {
+
+    @GetMapping("/api/greet")
+    public String greet() {
+        return "Hello, this is a RESTful API response!"; // Directly returns the response body
+    }
+}
+```
+
+**Step 2: Running the Application**
+
+When you run the application and navigate to `http://localhost:8080/api/greet`, you will see the response as plain text:
+
+```
+Hello, this is a RESTful API response!
+```
+
+### Key Differences
+
+| Feature                     | `@Controller`                                    | `@RestController`                                    |
+|-----------------------------|--------------------------------------------------|-----------------------------------------------------|
+| Purpose                     | Used for serving web pages (MVC)                 | Used for creating RESTful web services                |
+| Response Type               | Returns view names (String)                       | Returns response body directly (e.g., JSON, XML)     |
+| Annotation Combination       | Does not include `@ResponseBody`                 | Implicitly includes `@ResponseBody`                   |
+| Use Case                    | Suitable for web applications that render HTML    | Suitable for APIs that return data                     |
+
+### Conclusion
+
+In summary, use `@Controller` when you want to handle web requests and return views (HTML pages), and use `@RestController` when you are building RESTful APIs that need to return data in formats like JSON or XML. 

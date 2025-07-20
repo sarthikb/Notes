@@ -1,0 +1,155 @@
+
+### **Improved Example: Dependency Inversion Principle (DIP)**
+
+#### **Scenario:**
+We have a service that processes orders, and this service needs to handle payments. The payment methods can vary, so instead of having the `OrderService` directly depend on concrete payment classes (like `CreditCardPayment` or `PayPalPayment`), we'll use an interface to abstract the payment processing, making it flexible and easier to extend.
+
+---
+
+### **Before Applying DIP (Violation of DIP)**
+
+In this example, the `OrderService` directly depends on the concrete implementation of payment methods like `CreditCardPayment` and `PayPalPayment`.
+
+```java
+class CreditCardPayment {
+    public void processPayment(double amount) {
+        System.out.println("Processing credit card payment of $" + amount);
+    }
+}
+
+class PayPalPayment {
+    public void processPayment(double amount) {
+        System.out.println("Processing PayPal payment of $" + amount);
+    }
+}
+
+class OrderService {
+    private CreditCardPayment creditCardPayment;
+    private PayPalPayment payPalPayment;
+
+    public OrderService() {
+        creditCardPayment = new CreditCardPayment();
+        payPalPayment = new PayPalPayment();
+    }
+
+    public void processOrder(double amount, String paymentMethod) {
+        if ("creditCard".equalsIgnoreCase(paymentMethod)) {
+            creditCardPayment.processPayment(amount);
+        } else if ("paypal".equalsIgnoreCase(paymentMethod)) {
+            payPalPayment.processPayment(amount);
+        }
+    }
+}
+```
+
+#### **Explanation:**
+In this design:
+- `OrderService` is tightly coupled to both `CreditCardPayment` and `PayPalPayment`.
+- If we add another payment method (e.g., `BitcoinPayment`), we'd have to modify `OrderService`, which violates the **Open/Closed Principle** (OCP) and **Dependency Inversion Principle** (DIP).
+
+---
+
+### **After Applying DIP (Following DIP)**
+
+We will introduce an abstraction (`PaymentMethod` interface) that the `OrderService` can depend on. The payment methods will implement this interface, making `OrderService` independent of the concrete payment classes. This ensures that `OrderService` is only dependent on the abstraction, not the concrete details.
+
+```java
+// Abstraction: PaymentMethod interface
+interface PaymentMethod {
+    void processPayment(double amount);
+}
+
+// Concrete implementations of PaymentMethod
+class CreditCardPayment implements PaymentMethod {
+    public void processPayment(double amount) {
+        System.out.println("Processing credit card payment of $" + amount);
+    }
+}
+
+class PayPalPayment implements PaymentMethod {
+    public void processPayment(double amount) {
+        System.out.println("Processing PayPal payment of $" + amount);
+    }
+}
+
+class BitcoinPayment implements PaymentMethod {
+    public void processPayment(double amount) {
+        System.out.println("Processing Bitcoin payment of $" + amount);
+    }
+}
+
+// OrderService depends on PaymentMethod abstraction, not concrete classes
+class OrderService {
+    private PaymentMethod paymentMethod;
+
+    // Dependency Injection (constructor injection)
+    public OrderService(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public void processOrder(double amount) {
+        paymentMethod.processPayment(amount);
+    }
+}
+```
+
+---
+
+### **How It Works Now:**
+
+- The `OrderService` is **independent** of the concrete payment methods like `CreditCardPayment`, `PayPalPayment`, or `BitcoinPayment`. Instead, it depends on the abstraction (`PaymentMethod` interface).
+- This allows easy extension: if you need to add a new payment method (e.g., `ApplePay`), you can simply create a new class that implements the `PaymentMethod` interface without modifying the `OrderService` class.
+- **OrderService** now follows the Dependency Inversion Principle (DIP) because it depends on the abstraction (interface `PaymentMethod`), not on concrete details (`CreditCardPayment`, `PayPalPayment`, etc.).
+
+---
+
+### **Using the Classes:**
+
+Here’s how we would use the `OrderService` with different payment methods:
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        // Injecting the concrete payment method into OrderService using constructor injection
+        PaymentMethod creditCard = new CreditCardPayment();
+        PaymentMethod paypal = new PayPalPayment();
+        PaymentMethod bitcoin = new BitcoinPayment();
+
+        OrderService orderService1 = new OrderService(creditCard);
+        OrderService orderService2 = new OrderService(paypal);
+        OrderService orderService3 = new OrderService(bitcoin);
+
+        // Process orders with different payment methods
+        orderService1.processOrder(100.0); // Credit card payment
+        orderService2.processOrder(150.0); // PayPal payment
+        orderService3.processOrder(200.0); // Bitcoin payment
+    }
+}
+```
+
+#### **Output:**
+
+```
+Processing credit card payment of $100.0
+Processing PayPal payment of $150.0
+Processing Bitcoin payment of $200.0
+```
+
+---
+
+### **Benefits of Following DIP:**
+
+1. **Flexibility and Extensibility:**
+   - You can easily add new payment methods (e.g., `ApplePay`, `GooglePay`) without changing the `OrderService` class.
+   
+2. **Reduced Coupling:**
+   - `OrderService` is not tightly coupled to any specific payment method. Instead, it relies on the `PaymentMethod` abstraction, making it easier to modify payment methods independently.
+   
+3. **Testability:**
+   - Since we depend on abstractions, testing becomes easier. We can easily mock `PaymentMethod` during unit tests to isolate `OrderService`'s behavior.
+
+---
+
+### **Conclusion:**
+
+By applying the **Dependency Inversion Principle**, we ensure that the higher-level `OrderService` class is decoupled from the low-level payment method implementations. This makes the system easier to extend, maintain, and test while adhering to SOLID design principles.

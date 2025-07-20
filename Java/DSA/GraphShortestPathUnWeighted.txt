@@ -1,0 +1,171 @@
+Sure! Let’s go through a **detailed explanation** of the **Shortest Path Algorithm** in an **unweighted graph**, along with its **Java implementation**.
+
+---
+
+## 🔍 What is the Shortest Path in an Unweighted Graph?
+
+In an **unweighted graph**, all edges are considered to have the **same cost (or distance)**. So the shortest path is simply the path that has the **fewest number of edges** between two nodes.
+
+### ✅ Best Algorithm to Use: **Breadth-First Search (BFS)**
+
+**BFS** is ideal for finding the **shortest path** in **unweighted graphs** because it explores all nodes at the present "depth" before moving on to the nodes at the next depth level.
+
+---
+
+## 📚 BFS-Based Shortest Path Algorithm (Step-by-Step)
+
+Given:
+
+* A graph `G(V, E)` with vertices `V` and edges `E`.
+* A `source` node.
+* You want to find the shortest path from the source to all other nodes (or to a specific destination).
+
+### 🔧 Steps:
+
+1. Initialize a `Queue` for BFS.
+2. Create a `visited[]` array or `Set` to keep track of visited nodes.
+3. Maintain a `distance[]` array to store the distance from the source to each node.
+4. Optionally, maintain a `parent[]` array to reconstruct the path later.
+5. Start BFS from the source node.
+
+---
+
+## 🧠 Time and Space Complexity
+
+* **Time Complexity**: `O(V + E)` — each node and edge is visited once.
+* **Space Complexity**: `O(V)` — for distance, visited, and queue storage.
+
+---
+
+## 🧑‍💻 Java Implementation
+
+Here is a **complete Java program** that demonstrates finding the shortest path in an unweighted graph using BFS:
+
+```java
+import java.util.*;
+
+public class ShortestPathUnweightedGraph {
+    
+    static class Graph {
+        int V;
+        List<List<Integer>> adj;
+
+        Graph(int V) {
+            this.V = V;
+            adj = new ArrayList<>();
+            for (int i = 0; i < V; i++) {
+                adj.add(new ArrayList<>());
+            }
+        }
+
+        // Add undirected edge
+        void addEdge(int u, int v) {
+            adj.get(u).add(v);
+            adj.get(v).add(u);  // For undirected graph
+        }
+
+        // BFS to find shortest path from source to all other nodes
+        void shortestPath(int src) {
+            boolean[] visited = new boolean[V];
+            int[] distance = new int[V];
+            int[] parent = new int[V];
+
+            Queue<Integer> queue = new LinkedList<>();
+            visited[src] = true;
+            distance[src] = 0;
+            parent[src] = -1;
+            queue.add(src);
+
+            while (!queue.isEmpty()) {
+                int u = queue.poll();
+                for (int neighbor : adj.get(u)) {
+                    if (!visited[neighbor]) {
+                        visited[neighbor] = true;
+                        distance[neighbor] = distance[u] + 1;
+                        parent[neighbor] = u;
+                        queue.add(neighbor);
+                    }
+                }
+            }
+
+            // Print distances and paths
+            for (int i = 0; i < V; i++) {
+                System.out.println("Shortest distance from " + src + " to " + i + " is " + distance[i]);
+                printPath(parent, i);
+                System.out.println();
+            }
+        }
+
+        // Helper method to print path from source to target using parent array
+        void printPath(int[] parent, int j) {
+            if (parent[j] == -1) {
+                System.out.print(j);
+                return;
+            }
+            printPath(parent, parent[j]);
+            System.out.print(" -> " + j);
+        }
+    }
+
+    public static void main(String[] args) {
+        Graph g = new Graph(6);
+
+        // Add edges (example graph)
+        g.addEdge(0, 1);
+        g.addEdge(0, 2);
+        g.addEdge(1, 3);
+        g.addEdge(2, 3);
+        g.addEdge(3, 4);
+        g.addEdge(4, 5);
+
+        int source = 0;
+        System.out.println("Shortest paths from node " + source + ":");
+        g.shortestPath(source);
+    }
+}
+```
+
+---
+
+## 🧪 Sample Output
+
+For the given graph:
+
+```
+0 - 1 - 3 - 4 - 5
+ \     /
+   2
+```
+
+Running the above code will print:
+
+```
+Shortest paths from node 0:
+Shortest distance from 0 to 0 is 0
+0
+
+Shortest distance from 0 to 1 is 1
+0 -> 1
+
+Shortest distance from 0 to 2 is 1
+0 -> 2
+
+Shortest distance from 0 to 3 is 2
+0 -> 1 -> 3
+
+Shortest distance from 0 to 4 is 3
+0 -> 1 -> 3 -> 4
+
+Shortest distance from 0 to 5 is 4
+0 -> 1 -> 3 -> 4 -> 5
+```
+
+---
+
+## ✅ Summary
+
+* **Use BFS** for shortest paths in **unweighted graphs**.
+* Time-efficient and easy to implement.
+* Works for undirected and directed graphs.
+
+Would you like this for a **directed graph** or to find the **shortest path between two specific nodes** only?

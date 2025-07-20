@@ -1,0 +1,105 @@
+In Spring Boot, Dependency Injection (DI) is a core principle that allows developers to manage dependencies between objects in a flexible and decoupled manner. 
+There are several ways to perform dependency injection in Spring Boot, primarily categorized into three types:
+
+1. **Constructor Injection**
+2. **Setter Injection**
+3. **Field Injection**
+
+### 1. Constructor Injection
+
+In constructor injection, dependencies are provided through a class constructor. 
+This is the preferred method in Spring because it allows you to declare dependencies as `final`, ensuring that they are immutable after construction.
+
+#### Example
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class UserService {
+
+    private final NotificationService notificationService;
+
+    @Autowired // This is optional in Spring 4.3 and later if there’s only one constructor
+    public UserService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
+    public void registerUser(String username) {
+        System.out.println("User registered: " + username);
+        notificationService.sendNotification("Welcome, " + username + "!");
+    }
+}
+```
+
+### 2. Setter Injection
+
+In setter injection, dependencies are provided through setter methods after the object is constructed. 
+This method allows for optional dependencies and provides flexibility in modifying the dependencies.
+
+#### Example
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class UserService {
+
+    private NotificationService notificationService;
+
+    @Autowired // This is optional if you have only one setter
+    public void setNotificationService(NotificationService notificationService) {
+        this.notificationService = notificationService;
+    }
+
+    public void registerUser(String username) {
+        System.out.println("User registered: " + username);
+        notificationService.sendNotification("Welcome, " + username + "!");
+    }
+}
+```
+
+### 3. Field Injection
+
+Field injection directly injects dependencies into the fields of a class. 
+While this method is straightforward, it is generally discouraged because it makes the class harder to test and violates the principle of encapsulation.
+
+#### Example
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class UserService {
+
+    @Autowired
+    private NotificationService notificationService;
+
+    public void registerUser(String username) {
+        System.out.println("User registered: " + username);
+        notificationService.sendNotification("Welcome, " + username + "!");
+    }
+}
+```
+
+### Comparison of Injection Types
+
+| Feature                | Constructor Injection                   | Setter Injection                        | Field Injection                      |
+|------------------------|----------------------------------------|----------------------------------------|-------------------------------------|
+| **Initialization**     | Required dependencies are mandatory    | Dependencies can be optional           | Dependencies can be optional        |
+| **Immutability**       | Can declare dependencies as `final`    | No immutability guarantee              | No immutability guarantee           |
+| **Testability**        | Easier to test (dependencies are explicit) | Moderate testability                   | Harder to test                      |
+| **Encapsulation**      | Better encapsulation                    | Moderate encapsulation                 | Poor encapsulation                   |
+
+### When to Use Each Type
+
+- **Constructor Injection**: Use when all dependencies are required. It provides better testability and guarantees immutability.
+- **Setter Injection**: Use when some dependencies are optional or can be changed after object construction. This is useful for configuration purposes.
+- **Field Injection**: Generally avoid this approach for production code due to issues with testability and encapsulation. It may be used in simple cases or for quick prototyping.
+
+### Conclusion
+
+Understanding the different types of dependency injection in Spring Boot is essential for writing clean, maintainable, and testable code. Constructor injection is usually the best practice, while setter and field injections have their use cases. Choosing the right type of injection helps in achieving loose coupling and enhances the overall design of your application.

@@ -1,0 +1,110 @@
+### ReadWriteLock in Java
+
+A **ReadWriteLock** is a type of lock that allows multiple threads to read shared data concurrently, but only one thread to write to that data at a time. It provides better performance in scenarios where the data is read frequently but updated less often, as it allows multiple readers to access the data in parallel while ensuring that only one writer can modify the data at a time.
+
+Java provides the **`ReadWriteLock`** interface, which is implemented by the **`ReentrantReadWriteLock`** class from the `java.util.concurrent.locks` package. This class provides the mechanism for both read and write locks, ensuring that:
+
+- Multiple threads can acquire the **read lock** simultaneously (as long as no thread holds the **write lock**).
+- Only one thread can acquire the **write lock** at a time, and no other thread can hold a read or write lock when a write lock is held.
+
+### Key Characteristics of ReadWriteLock
+
+1. **Read Lock**: Multiple threads can acquire the read lock at the same time. This allows concurrent access for reading operations, improving throughput for read-heavy scenarios.
+2. **Write Lock**: Only one thread can acquire the write lock, and it must have exclusive access to the resource. No other thread can hold the read or write lock while a thread holds the write lock.
+3. **Writer Preference**: If a write lock is continuously being requested, readers might have to wait for a while. Some implementations (like `ReentrantReadWriteLock`) allow configuring the lock to either prefer readers or writers.
+
+### Example of ReadWriteLock with `ReentrantReadWriteLock`:
+
+```java
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+class SharedData {
+    private int value = 0;
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
+    // Method to read the value (multiple threads can read concurrently)
+    public int readValue() {
+        lock.readLock().lock();  // Acquire the read lock
+        try {
+            System.out.println(Thread.currentThread().getName() + " is reading the value: " + value);
+            return value;
+        } finally {
+            lock.readLock().unlock();  // Always release the read lock
+        }
+    }
+
+    // Method to write a value (only one thread can write at a time)
+    public void writeValue(int newValue) {
+        lock.writeLock().lock();  // Acquire the write lock
+        try {
+            System.out.println(Thread.currentThread().getName() + " is writing the value: " + newValue);
+            value = newValue;
+        } finally {
+            lock.writeLock().unlock();  // Always release the write lock
+        }
+    }
+}
+
+public class ReadWriteLockExample {
+    public static void main(String[] args) {
+        SharedData sharedData = new SharedData();
+
+        // Writer thread (writes the value)
+        Thread writerThread = new Thread(() -> {
+            sharedData.writeValue(10);
+        }, "Writer-1");
+
+        // Reader threads (read the value)
+        Thread readerThread1 = new Thread(() -> {
+            sharedData.readValue();
+        }, "Reader-1");
+
+        Thread readerThread2 = new Thread(() -> {
+            sharedData.readValue();
+        }, "Reader-2");
+
+        // Start the threads
+        writerThread.start();
+        readerThread1.start();
+        readerThread2.start();
+    }
+}
+```
+
+### Explanation of the Code:
+
+1. **SharedData Class**: This class has a shared resource (`value`) and methods to read and write it. The `ReentrantReadWriteLock` is used to manage the read and write locks.
+   
+   - **readValue()**: This method is synchronized using the read lock (`readLock()`). Multiple threads can acquire the read lock concurrently as long as no thread holds the write lock.
+   
+   - **writeValue()**: This method is synchronized using the write lock (`writeLock()`). Only one thread can acquire the write lock at a time, ensuring exclusive access to the resource for writing.
+
+2. **Main Method**: Three threads are created:
+   - One writer thread that writes a new value to the `value` field.
+   - Two reader threads that read the value.
+
+   The **writer thread** will block until all **reader threads** have finished reading the value, and vice versa. The **reader threads** can run concurrently as long as no writer thread is holding the write lock.
+
+### Expected Output:
+
+```
+Reader-1 is reading the value: 0
+Reader-2 is reading the value: 0
+Writer-1 is writing the value: 10
+```
+
+### Behavior and Performance:
+- **Read Lock**: Multiple reader threads can acquire the read lock simultaneously if there are no writers, so it improves performance in cases where read operations are frequent.
+- **Write Lock**: The write lock is exclusive. While one thread holds the write lock, no other thread can acquire the read or write lock.
+- **Fairness**: By default, `ReentrantReadWriteLock` gives preference to readers, meaning that if there are reader threads waiting, they may be granted access before a writer thread. You can configure the lock to be "fair" (where the thread that has been waiting the longest gets the lock) if needed, using the `ReentrantReadWriteLock(true)` constructor.
+
+### Use Case for ReadWriteLock:
+The **ReadWriteLock** is particularly useful when you have scenarios with frequent read operations but infrequent write operations. For example:
+- **Cache management**: Where multiple threads may need to read data from a cache, but only one thread at a time can update the cache.
+- **File access**: Multiple threads reading a file's contents while a single thread may need to write to it.
+
+### Summary:
+- **ReadWriteLock** allows more concurrent threads to access data for reading but ensures exclusive access when writing.
+- **ReentrantReadWriteLock** is the typical implementation that supports read and write locks.
+- It improves performance for read-heavy scenarios and ensures data consistency by controlling access to shared resources.

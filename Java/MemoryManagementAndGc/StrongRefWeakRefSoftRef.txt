@@ -1,0 +1,136 @@
+These references control how the garbage collector handles objects and their lifecycles.
+
+### 1. **Strong Reference** (The Default Reference)
+
+A **strong reference** is the default type of reference in Java. If an object is referenced by a strong reference, the garbage collector will **not** reclaim it, 
+even if the object is no longer needed, as long as there are still references pointing to it.
+
+In simple terms, if an object has a strong reference, it is **not eligible for garbage collection**.
+
+#### Example of Strong Reference:
+```java
+public class StrongReferenceExample {
+    public static void main(String[] args) {
+        Object obj = new Object();  // Strong reference to the object
+
+        // The object is still reachable as long as 'obj' refers to it.
+        System.out.println("Object is reachable: " + (obj != null));
+
+        // After 'obj' goes out of scope or is set to null, the object will be eligible for GC.
+        obj = null;
+    }
+}
+```
+
+### Key points about **strong references**:
+- This is the default kind of reference in Java (i.e., when you create an object and assign it to a variable).
+- The object remains in memory as long as the reference to it is alive.
+- **Objects with only strong references are never garbage collected** unless all strong references are gone.
+
+---
+
+### 2. **Weak Reference**
+
+A **weak reference** allows the garbage collector to reclaim an object even if it is still referenced by a weak reference. 
+In other words, **when an object is only weakly referenced, it becomes eligible for garbage collection**.
+
+In Java, weak references are handled via the `WeakReference` class in the `java.lang.ref` package.
+
+#### Example of Weak Reference:
+```java
+import java.lang.ref.WeakReference;
+
+public class WeakReferenceExample {
+    public static void main(String[] args) {
+        // Create a strong reference to an object
+        Object strongReference = new Object();
+
+        // Create a weak reference to the same object
+        WeakReference<Object> weakReference = new WeakReference<>(strongReference);
+
+        // The object is still reachable through the weak reference
+        System.out.println("Before GC: " + weakReference.get());
+
+        // Nullify the strong reference, so the only reference left is weakReference
+        strongReference = null;
+
+        // Run garbage collection (optional)
+        System.gc();  // Hint to the garbage collector to run
+
+        // After garbage collection, the weak reference may be null because the object is collected
+        System.out.println("After GC: " + weakReference.get());  // Might print null, object is collected.
+    }
+}
+```
+
+### Key points about **weak references**:
+- **Garbage collection is allowed** on objects with only weak references.
+- They are primarily used for **caching** or **listener patterns**, 
+where objects can be collected when no longer needed but will stay in memory if strongly referenced elsewhere.
+- The object will be collected as soon as it is no longer reachable by any strong references, even if a weak reference exists.
+
+---
+
+### 3. **Soft Reference**
+
+A **soft reference** is similar to a weak reference but with a different garbage collection behavior. 
+Soft references are only collected when the JVM is **running low on memory**. If there is enough memory available, 
+soft references allow the object to stay alive in memory for longer.
+
+Soft references are useful for **memory-sensitive caches**, where you want to keep the object as long as possible, 
+but allow it to be collected if memory is constrained.
+
+In Java, soft references are handled via the `SoftReference` class in the `java.lang.ref` package.
+
+#### Example of Soft Reference:
+```java
+import java.lang.ref.SoftReference;
+
+public class SoftReferenceExample {
+    public static void main(String[] args) {
+        // Create a large object
+        byte[] largeData = new byte[10 * 1024 * 1024];  // 10 MB array
+
+        // Create a soft reference to that object
+        SoftReference<byte[]> softRef = new SoftReference<>(largeData);
+
+        // The object can still be accessed via the soft reference
+        System.out.println("Before GC: " + softRef.get());
+
+        // Nullify the strong reference to the object
+        largeData = null;
+
+        // Run garbage collection (this is to trigger GC manually in this example)
+        System.gc();
+
+        // After GC, the soft reference will still hold the object if there is enough memory
+        System.out.println("After GC: " + softRef.get());  // May still print the object.
+    }
+}
+```
+
+### Key points about **soft references**:
+- Soft references allow objects to stay in memory **unless the system is low on memory**.
+- If there is plenty of memory, the object will remain in memory, but if memory usage grows, 
+the garbage collector may reclaim objects with only soft references.
+- Soft references are ideal for caching large objects or data that can be recreated if needed (e.g., images, files, or data structures).
+
+---
+
+### Comparison of the Three Reference Types:
+
+| Reference Type       | Collection Behavior                          | Use Case                                      |
+|----------------------|----------------------------------------------|-----------------------------------------------|
+| **Strong Reference**  | **Never collected** until no references exist. | Default behavior; objects stay in memory until all references are gone. |
+| **Weak Reference**    | **Collected immediately** when no strong references exist. | Caching, listeners, or when objects can be collected sooner. |
+| **Soft Reference**    | **Collected when memory is low** (unless memory is abundant). | Memory-sensitive caching, e.g., large objects that are kept as long as memory allows. |
+
+---
+
+### When to Use Each:
+- **Strong Reference**: Use this for normal object references, 
+where you want the object to persist until you're done with it (this is the default behavior).
+- **Weak Reference**: Use this when you want objects to be garbage collected as soon as they are no longer in active use and are only weakly referenced (like caching that doesn't need to prevent garbage collection).
+- **Soft Reference**: Use this for objects that should stay in memory unless the system is under memory pressure (like memory-sensitive caches for large objects that are expensive to recreate).
+
+Each reference type offers different control over the lifecycle of objects, giving developers flexibility in managing memory efficiently in Java.

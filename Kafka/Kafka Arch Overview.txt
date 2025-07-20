@@ -1,0 +1,140 @@
+### Kafka Architecture Overview
+
+Apache Kafka is a distributed streaming platform that is primarily used for building real-time data pipelines and streaming applications. 
+The architecture of Kafka is designed to be highly scalable, fault-tolerant, and distributed, making it ideal for managing large volumes of data. 
+Let's break down the core components of Kafka's architecture: **Producers**, **Consumers**, **Brokers**, and **Zookeeper**.
+
+### 1. **Kafka Producer**
+The **Producer** is responsible for sending data (messages) to Kafka. It produces records (messages) and publishes them to Kafka topics.
+
+#### Key Aspects of the Producer:
+- **Publish Data**: Producers send data to Kafka topics. A producer writes data to a topic, which is then consumed by consumers.
+- **Partitioning**: Kafka topics are divided into partitions, and the producer decides which partition to send a message to. 
+This decision can be based on the message key (e.g., hashing the key), round-robin strategy, or a custom partitioning logic.
+- **Message Serialization**: Producers serialize data into a format that Kafka can handle, such as JSON, Avro, or Protobuf. Kafka usually requires a schema (e.g., Avro schema) to ensure consistency.
+- **Acks (Acknowledgments)**: Producers can be configured to wait for acknowledgment from the broker(s) before considering a message "written". 
+Different acknowledgment levels (0, 1, and all) affect the producer's delivery guarantees (e.g., durability, reliability).
+
+#### Producer Workflow:
+1. The producer serializes the message and decides which topic and partition to send the message to.
+2. The message is sent over the network to the broker that owns the relevant partition.
+3. The producer waits for the acknowledgment based on the configuration (e.g., `acks=all` ensures all replicas acknowledge).
+
+### 2. **Kafka Consumer**
+The **Consumer** reads data from Kafka topics. A consumer subscribes to one or more topics and processes the messages produced to those topics.
+
+#### Key Aspects of the Consumer:
+- **Consumer Groups**: Kafka consumers work in groups, called **consumer groups**. Each consumer group is responsible for consuming messages from one or more partitions. 
+Kafka ensures that each partition is consumed by only one consumer in the group.
+- **Offset Management**: Kafka tracks the position of a consumer in a partition using **offsets**. The offset is the position of the last successfully processed message. 
+Consumers can commit offsets to Kafka (to store the last read message) or manage offsets manually.
+- **Message Delivery Semantics**: Kafka supports different delivery guarantees:
+  - **At-most-once**: Messages are read at most once, possibly missing some.
+  - **At-least-once**: Messages are read at least once, but might be reprocessed if there is an issue.
+  - **Exactly-once**: Kafka ensures no message duplication or loss.
+
+#### Consumer Workflow:
+1. A consumer group subscribes to a topic (or multiple topics).
+2. Kafka assigns partitions to consumers within the group. Each partition is consumed by a single consumer in the group.
+3. Consumers read messages from the partitions, and Kafka tracks their offset.
+4. After processing a message, the consumer commits the offset to Kafka to indicate that it has successfully consumed that message.
+
+### 3. **Kafka Broker**
+A **Kafka Broker** is a server that stores Kafka topics and their partitions, handles data replication, and manages consumer requests.
+
+#### Key Aspects of the Broker:
+- **Partitioning**: Kafka topics are divided into partitions. Each partition is hosted on a broker, and each broker can host multiple partitions. 
+Partitions allow Kafka to scale horizontally by distributing messages across multiple brokers.
+- **Replication**: Kafka ensures fault tolerance by replicating partitions across multiple brokers. Each partition has one leader and multiple replicas. 
+The leader handles all reads and writes for the partition, while replicas act as backups.
+- **Broker Responsibilities**:
+  - Store messages (in the form of logs) for each partition.
+  - Handle producer and consumer requests to read and write messages.
+  - Ensure data consistency and replication across brokers.
+  - Manage offsets (in the case of Kafka consumer offset tracking).
+  - Handle the partition assignment and leadership elections (in collaboration with Zookeeper).
+
+#### Broker Workflow:
+1. A producer sends a message to a broker. The message is stored in the leader partition for the relevant topic.
+2. The broker replicates the message to other brokers (replicas) for fault tolerance.
+3. Consumers fetch messages from the leader of the partition. The broker handles the consumer’s offset and ensures they receive the correct messages.
+
+### 4. **Apache ZooKeeper**
+**ZooKeeper** is a distributed coordination service that Kafka uses to manage its cluster metadata and broker coordination. 
+Though newer versions of Kafka are moving toward **KRaft** (Kafka Raft mode, where Kafka handles metadata itself), Zookeeper has traditionally been a core component for managing the Kafka cluster.
+
+#### Key Aspects of ZooKeeper:
+- **Cluster Metadata Management**: ZooKeeper stores metadata about Kafka topics, partitions, brokers, and consumers. It keeps track of which brokers are alive and manages the overall state of the Kafka cluster.
+- **Broker Coordination**: When a broker joins or leaves the cluster, Zookeeper ensures that the cluster state is updated and partition leaders are reassigned if necessary.
+- **Leader Election**: ZooKeeper handles the leader election process for partitions. Each partition has one leader, and ZooKeeper helps Kafka brokers elect a leader when needed.
+- **Fault Tolerance**: ZooKeeper helps Kafka handle failures and ensures that if a broker goes down, a new leader for the partition is selected quickly.
+
+#### ZooKeeper Workflow:
+1. Kafka brokers register themselves with Zookeeper when they start up.
+2. When a producer sends a message, Zookeeper ensures that the correct partition leader is chosen.
+3. Zookeeper coordinates consumer group membership and ensures that partitions are evenly distributed among consumers in a group.
+4. If a broker fails, Zookeeper will elect a new partition leader to maintain availability.
+
+### Kafka Architecture Diagram (High-Level)
+```
+              +----------------------------------------+
+              |               Kafka Cluster           |
+              |                                        |
+              |  +----------------------------+      |
+              |  |        Kafka Broker 1      |      |
+              |  |  (Leader, Partition 1, 2)  |      |
+              |  +----------------------------+      |
+              |                                        |
+              |  +----------------------------+      |
+              |  |        Kafka Broker 2      |      |
+              |  |  (Replica of Partition 1)  |      |
+              |  +----------------------------+      |
+              |                                        |
+              |  +----------------------------+      |
+              |  |        Kafka Broker 3      |      |
+              |  |  (Replica of Partition 2)  |      |
+              |  +----------------------------+      |
+              +----------------------------------------+
+                        |         |         |
+                     +-----+    +-----+    +-----+
+                     | ZK  |    | ZK  |    | ZK  |
+                     +-----+    +-----+    +-----+
+                          |
+                  +-------------------+
+                  |    Kafka Producer |
+                  +-------------------+
+                          |
+                   +-------------+
+                   | Kafka Topic |
+                   +-------------+
+                          |
+                 +------------------+
+                 | Kafka Consumer   |
+                 +------------------+
+```
+
+### Summary of Kafka Architecture Components:
+
+1. **Producer**:
+   - Publishes messages to Kafka topics.
+   - Responsible for message serialization, partitioning, and ensuring message delivery.
+
+2. **Consumer**:
+   - Subscribes to topics and processes the messages.
+   - Can work in a consumer group to distribute message processing.
+
+3. **Broker**:
+   - Kafka servers that store data (partitions), handle requests from producers and consumers, and manage replication.
+   - Ensures fault tolerance and high availability by replicating data across multiple brokers.
+
+4. **Zookeeper**:
+   - Coordinates Kafka brokers and manages metadata, leader elections, and cluster state.
+   - Though being phased out for **KRaft mode**, Zookeeper is still essential in older versions of Kafka.
+
+---
+
+### Evolution to KRaft Mode (Kafka Raft Mode):
+
+In newer versions of Kafka (post 2.8), Kafka is moving toward **KRaft mode**, which removes the dependency on **Zookeeper**. 
+Instead, Kafka uses the **Raft consensus algorithm** for metadata management, partition leadership, and fault tolerance, which is much simpler and more integrated into Kafka itself. In KRaft mode, Kafka brokers directly manage cluster metadata and consensus.
+

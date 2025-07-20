@@ -1,0 +1,134 @@
+Here are examples and explanations of the `SELECT`, `LIMIT`, `LIKE`, and `ORDER BY` clauses in SQL:
+
+### 1. **`SELECT` Statement**
+
+The `SELECT` statement is used to retrieve data from one or more tables.
+
+#### Basic `SELECT`:
+
+```sql
+SELECT name, email, salary FROM Employees;
+```
+
+- **Explanation**:
+  - This query retrieves the **`name`**, **`email`**, and **`salary`** columns from the **`Employees`** table.
+  - It returns all rows in the table for the specified columns.
+
+### 2. **`LIMIT` Clause**
+
+The `LIMIT` clause is used to specify the number of rows returned by the query. It's especially useful for limiting the result set when working with large tables.
+
+#### `LIMIT` Example:
+
+```sql
+SELECT name, email FROM Employees LIMIT 5;
+```
+
+- **Explanation**:
+  - This query will retrieve only the first **5 rows** from the `Employees` table, displaying the **`name`** and **`email`** columns.
+  - This is useful when you want to limit the number of rows returned (e.g., in pagination).
+
+#### `LIMIT` with `OFFSET` (Pagination):
+
+```sql
+SELECT name, email FROM Employees LIMIT 5 OFFSET 10;
+```
+
+- **Explanation**:
+  - The query will retrieve 5 rows starting from row **11** (since `OFFSET 10` skips the first 10 rows).
+  - This is helpful for pagination: for example, you can display the next page of results by changing the offset.
+
+### 3. **`LIKE` Clause**
+
+The `LIKE` operator is used in a `WHERE` clause to search for a specified pattern in a column.
+
+#### Basic `LIKE` Example:
+
+```sql
+SELECT name, email FROM Employees WHERE name LIKE 'J%';
+```
+
+- **Explanation**:
+  - The query retrieves **`name`** and **`email`** columns for employees whose **`name`** starts with the letter 'J'.
+  - The **`%`** is a wildcard character that matches any sequence of characters. So `'J%'` matches any name that starts with 'J' (e.g., "John", "Jane", "James").
+
+#### `LIKE` with `_` (Single Character Wildcard):
+
+```sql
+SELECT name, email FROM Employees WHERE name LIKE '_a%';
+```
+
+- **Explanation**:
+  - The query retrieves employees whose **`name`** has a second letter 'a'. The `_` matches a **single character**, and `%` matches any number of characters after 'a' (e.g., "Sam", "Nash", "Tara").
+
+#### `LIKE` with Multiple Conditions:
+
+```sql
+SELECT name, email FROM Employees WHERE email LIKE '%@gmail.com';
+```
+
+- **Explanation**:
+  - This query retrieves all employees whose **`email`** ends with `@gmail.com`. The `%` matches any characters before `@gmail.com`.
+
+### 4. **`ORDER BY` Clause**
+
+The `ORDER BY` clause is used to sort the result set in either ascending or descending order.
+
+#### Basic `ORDER BY` Example:
+
+```sql
+SELECT name, salary FROM Employees ORDER BY salary DESC;
+```
+
+- **Explanation**:
+  - This query retrieves the **`name`** and **`salary`** columns from the `Employees` table and orders the results by **`salary`** in **descending order** (highest salary first).
+
+#### `ORDER BY` with Multiple Columns:
+
+```sql
+SELECT name, salary, hire_date FROM Employees
+ORDER BY salary DESC, hire_date ASC;
+```
+
+- **Explanation**:
+  - This query first orders employees by **`salary`** in **descending order**. If two employees have the same salary, it further sorts them by **`hire_date`** in **ascending order** (earliest hire date first).
+  
+#### `ORDER BY` with `LIMIT`:
+
+```sql
+SELECT name, salary FROM Employees ORDER BY salary DESC LIMIT 3;
+```
+
+- **Explanation**:
+  - This query retrieves the top 3 highest-paid employees by ordering the results in descending order of **`salary`** and limiting the output to the top 3 rows.
+
+### 5. **Combining `SELECT`, `LIMIT`, `LIKE`, and `ORDER BY`**
+
+You can combine multiple clauses to create more complex queries. Here's an example that combines all of the above features:
+
+#### Complex Query Example:
+
+```sql
+SELECT name, email, salary 
+FROM Employees 
+WHERE name LIKE 'J%' 
+ORDER BY salary DESC 
+LIMIT 5;
+```
+
+- **Explanation**:
+  - **`SELECT`**: Retrieves the **`name`**, **`email`**, and **`salary`** of employees.
+  - **`WHERE`**: Filters employees whose **`name`** starts with 'J' (`LIKE 'J%'`).
+  - **`ORDER BY`**: Sorts the results by **`salary`** in **descending** order, so the highest-paid employees come first.
+  - **`LIMIT`**: Limits the result set to the top 5 rows.
+
+---
+
+### Summary of SQL Clauses:
+
+1. **`SELECT`**: Retrieves data from one or more columns.
+2. **`LIMIT`**: Restricts the number of rows returned by the query.
+3. **`LIKE`**: Filters results based on a pattern matching condition.
+4. **`ORDER BY`**: Sorts the results by one or more columns in ascending (`ASC`) or descending (`DESC`) order.
+
+Each of these clauses can be used independently or combined to form more complex queries based on your data retrieval needs.

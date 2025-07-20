@@ -1,0 +1,121 @@
+The **Compare and Swap** (CAS) technique is a critical concept in concurrent programming, particularly in Java for building lock-free and thread-safe data structures. It allows you to compare a variable's value with an expected value and, if they match, update it with a new value atomically (i.e., without interference from other threads).
+
+In Java, this technique is often used to implement low-level concurrency mechanisms, and it's supported natively in Java with the help of `java.util.concurrent.atomic` package, which provides classes like `AtomicInteger`, `AtomicLong`, etc. These classes are designed to be used with CAS operations.
+
+### Understanding the Compare and Swap Technique
+
+Here’s a breakdown of how CAS works:
+
+1. **Compare**: The algorithm first compares the current value of a variable with an expected value.
+2. **Swap**: If the current value matches the expected value, the algorithm updates the variable with a new value.
+3. **Atomicity**: The comparison and the update must happen as a single atomic operation, ensuring that no other thread can interfere during this process.
+
+### CAS Operation in Java
+
+In Java, the `Atomic` classes like `AtomicInteger` and `AtomicReference` implement the CAS technique internally. Let's take the `AtomicInteger` class as an example.
+
+### Example: Using `AtomicInteger` with CAS
+
+Let’s say you want to increment an integer value in a thread-safe way without using locks. You can use the `AtomicInteger` class to do this.
+
+Here’s an example to demonstrate CAS with `AtomicInteger`:
+
+```java
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class CompareAndSwapExample {
+    public static void main(String[] args) {
+        // Create an AtomicInteger with an initial value of 0
+        AtomicInteger atomicValue = new AtomicInteger(0);
+        
+        // Create two threads that try to increment the value concurrently
+        Thread t1 = new Thread(() -> {
+            for (int i = 0; i < 5; i++) {
+                int oldValue = atomicValue.get();
+                int newValue = oldValue + 1;
+                
+                // CAS operation: compare old value and update to new value atomically
+                boolean success = atomicValue.compareAndSet(oldValue, newValue);
+                if (success) {
+                    System.out.println("Thread 1 incremented: " + newValue);
+                } else {
+                    System.out.println("Thread 1 failed to increment, retrying...");
+                }
+            }
+        });
+
+        Thread t2 = new Thread(() -> {
+            for (int i = 0; i < 5; i++) {
+                int oldValue = atomicValue.get();
+                int newValue = oldValue + 1;
+                
+                // CAS operation: compare old value and update to new value atomically
+                boolean success = atomicValue.compareAndSet(oldValue, newValue);
+                if (success) {
+                    System.out.println("Thread 2 incremented: " + newValue);
+                } else {
+                    System.out.println("Thread 2 failed to increment, retrying...");
+                }
+            }
+        });
+
+        // Start both threads
+        t1.start();
+        t2.start();
+    }
+}
+```
+
+### Key Concepts in the Example:
+
+1. **`AtomicInteger`**: This class provides an integer value that can be atomically updated. The `compareAndSet` method is used to implement the CAS operation.
+   
+2. **`compareAndSet(oldValue, newValue)`**: This method compares the current value of the integer to `oldValue`. If it matches, it sets the value to `newValue` atomically. If the current value doesn't match the expected `oldValue`, the operation fails and returns `false`, indicating that another thread might have modified the value in the meantime.
+
+3. **Concurrency**: The two threads are running concurrently, both attempting to increment the atomic integer. However, due to the CAS operation, each thread will only successfully increment the value if it reads the expected `oldValue` without interference from the other thread.
+
+### Output Explanation
+
+The output will be something like:
+
+```
+Thread 1 incremented: 1
+Thread 2 incremented: 1
+Thread 1 incremented: 2
+Thread 2 incremented: 2
+Thread 1 incremented: 3
+Thread 2 incremented: 3
+Thread 1 incremented: 4
+Thread 2 incremented: 4
+Thread 1 incremented: 5
+Thread 2 incremented: 5
+```
+
+If a thread reads an outdated value due to the other thread modifying the value in between, it will retry the CAS operation. This is why you might see retries in some implementations.
+
+### Why Use CAS in Java?
+
+1. **Avoid Locks**: CAS provides a way to perform updates without requiring synchronization or locks, which reduces the overhead of thread contention and improves performance.
+   
+2. **Atomic Operations**: Since the operation is atomic, the value remains consistent even in highly concurrent environments, preventing race conditions.
+
+3. **Performance**: CAS is often faster than traditional locking mechanisms (e.g., `synchronized` blocks), especially in highly concurrent situations.
+
+### CAS in Low-Level Concurrency Mechanisms
+
+In Java, the underlying implementation of classes like `AtomicInteger` and `AtomicReference` makes use of CPU-level atomic operations, which are much more efficient than using synchronized blocks or locks.
+
+Java's **`java.util.concurrent.atomic`** package is built around the CAS technique, providing the following classes for atomic operations:
+
+- **`AtomicBoolean`**
+- **`AtomicInteger`**
+- **`AtomicLong`**
+- **`AtomicReference`**
+- **`AtomicMarkableReference`**
+- **`AtomicStampedReference`**
+
+These atomic classes use CAS to ensure thread safety while performing operations like incrementing values, setting new values, or comparing and swapping references, all without locking.
+
+### Conclusion
+
+The **Compare and Swap (CAS)** technique is a powerful tool in Java for implementing efficient and lock-free concurrent operations. It is widely used in `Atomic` classes and provides a way to manage shared variables in a thread-safe manner without the overhead of locks. By understanding and leveraging CAS, you can build high-performance, concurrent applications.

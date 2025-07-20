@@ -1,0 +1,143 @@
+The **Factory Design Pattern** is one of the most commonly used **creational design patterns** in Java and object-oriented programming. It provides a way to **create objects without specifying the exact class of object that will be created**.
+
+---
+
+### 🔧 What is the Factory Design Pattern?
+
+The Factory Pattern defines an interface for creating an object but lets subclasses alter the type of objects that will be created.
+
+---
+
+### ✅ When to Use the Factory Pattern
+
+* When the exact type of the object isn't known until runtime.
+* When the creation process is complex or involves multiple steps.
+* To centralize object creation logic (avoid duplication).
+* To support **open/closed principle** (easy to extend, hard to modify).
+
+---
+
+### 🏗️ Structure of Factory Pattern
+
+1. **Product (Interface or Abstract class)** – Common interface for all objects that can be created.
+2. **Concrete Products** – Different implementations of the product interface.
+3. **Factory (Creator)** – Class or method that returns an instance of a product based on input.
+
+---
+
+### 💡 Real-Life Analogy
+
+Imagine a **Shape Factory** that produces shapes like **Circle**, **Square**, and **Rectangle**. You just ask for a shape by name, and the factory gives you the correct object.
+
+---
+
+### ✅ Java Example: Shape Factory
+
+#### Step 1: Create the Shape interface
+
+```java
+public interface Shape {
+    void draw();
+}
+```
+
+#### Step 2: Create Concrete Classes implementing the Shape interface
+
+```java
+public class Circle implements Shape {
+    public void draw() {
+        System.out.println("Drawing a Circle");
+    }
+}
+
+public class Square implements Shape {
+    public void draw() {
+        System.out.println("Drawing a Square");
+    }
+}
+
+public class Rectangle implements Shape {
+    public void draw() {
+        System.out.println("Drawing a Rectangle");
+    }
+}
+```
+
+#### Step 3: Create a Factory to generate objects of concrete classes
+
+```java
+public class ShapeFactory {
+    
+    // Factory method
+    public Shape getShape(String shapeType) {
+        if (shapeType == null) return null;
+        if (shapeType.equalsIgnoreCase("CIRCLE")) {
+            return new Circle();
+        } else if (shapeType.equalsIgnoreCase("SQUARE")) {
+            return new Square();
+        } else if (shapeType.equalsIgnoreCase("RECTANGLE")) {
+            return new Rectangle();
+        }
+        return null;
+    }
+}
+```
+
+#### Step 4: Use the Factory in Client Code
+
+```java
+public class FactoryPatternDemo {
+    public static void main(String[] args) {
+        ShapeFactory shapeFactory = new ShapeFactory();
+
+        Shape shape1 = shapeFactory.getShape("CIRCLE");
+        shape1.draw();
+
+        Shape shape2 = shapeFactory.getShape("SQUARE");
+        shape2.draw();
+
+        Shape shape3 = shapeFactory.getShape("RECTANGLE");
+        shape3.draw();
+    }
+}
+```
+
+---
+
+### 📌 Output
+
+```
+Drawing a Circle
+Drawing a Square
+Drawing a Rectangle
+```
+
+---
+
+### 🔍 Advantages of Factory Pattern
+
+* Loose coupling: Client doesn't need to know the concrete class.
+* Scalability: Easy to add new product types.
+* Code reuse and centralized object creation logic.
+
+---
+
+### ⚠️ Disadvantages
+
+* Can lead to large numbers of small classes.
+* Complex if used improperly.
+* Overhead of creating an extra factory class.
+
+---
+
+### 🧠 Summary
+
+| Concept       | Description                              |
+| ------------- | ---------------------------------------- |
+| Purpose       | Abstract object creation                 |
+| Key Benefit   | Loose coupling, encapsulated creation    |
+| Key Component | Factory class, product interface/classes |
+
+---
+
+Would you like to see an advanced version using reflection, enums, or generics?

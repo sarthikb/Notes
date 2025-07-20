@@ -1,0 +1,177 @@
+Certainly! Let's explore the differences between `HashSet`, `LinkedHashSet`, and `TreeSet` in Java, along with examples and details about each.
+
+### 1. **HashSet**
+`HashSet` is the most commonly used implementation of the `Set` interface. It stores unique elements and is backed by a **hash table**. It does not maintain any specific order of the elements.
+
+#### Key Features:
+- **No order guarantee**: The elements are unordered, meaning their order is not preserved.
+- **Allows one null element**: You can store `null` in a `HashSet` (but only one `null`).
+- **Time Complexity**: 
+  - Insertion: **O(1)** (on average)
+  - Lookup: **O(1)** (on average)
+  - Deletion: **O(1)** (on average)
+
+#### Example:
+```java
+import java.util.HashSet;
+
+public class HashSetExample {
+    public static void main(String[] args) {
+        HashSet<String> set = new HashSet<>();
+        
+        // Adding elements to HashSet
+        set.add("Apple");
+        set.add("Banana");
+        set.add("Orange");
+        set.add("Apple"); // Duplicate, won't be added
+        
+        System.out.println("HashSet: " + set);
+    }
+}
+```
+
+**Output**:
+```
+HashSet: [Banana, Orange, Apple]
+```
+
+Here, the elements in `HashSet` are not in any specific order, and duplicates are automatically ignored.
+
+### 2. **LinkedHashSet**
+`LinkedHashSet` is a subclass of `HashSet` that preserves the **insertion order** of elements. It maintains a **linked list** of the elements, which allows it to keep track of the order in which the elements were added.
+
+#### Key Features:
+- **Order maintained**: Elements are stored in the order they were added (insertion order).
+- **No duplicates**: Like `HashSet`, it does not allow duplicate elements.
+- **Allows one null element**: Like `HashSet`, it can store only one `null`.
+- **Time Complexity**: 
+  - Insertion: **O(1)** (on average)
+  - Lookup: **O(1)** (on average)
+  - Deletion: **O(1)** (on average)
+
+#### Example:
+```java
+import java.util.LinkedHashSet;
+
+public class LinkedHashSetExample {
+    public static void main(String[] args) {
+        LinkedHashSet<String> set = new LinkedHashSet<>();
+        
+        // Adding elements to LinkedHashSet
+        set.add("Apple");
+        set.add("Banana");
+        set.add("Orange");
+        set.add("Apple"); // Duplicate, won't be added
+        
+        System.out.println("LinkedHashSet: " + set);
+    }
+}
+```
+
+**Output**:
+```
+LinkedHashSet: [Apple, Banana, Orange]
+```
+
+Here, the order of insertion is preserved. The duplicate "Apple" is ignored, and the set maintains the order of elements as they were added.
+
+### 3. **TreeSet**
+`TreeSet` is an implementation of the `Set` interface that is backed by a **Red-Black tree** (a type of self-balancing binary search tree). It stores elements in a **sorted order** according to their natural ordering or by a custom comparator.
+
+#### Key Features:
+- **Sorted order**: The elements are stored in ascending order by default (natural ordering), or according to a `Comparator` if provided.
+- **No duplicates**: Like `HashSet`, it does not allow duplicates.
+- **Does not allow `null`**: You cannot store `null` in a `TreeSet` because it requires a natural ordering or a `Comparator`, and `null` cannot be compared.
+- **Time Complexity**:
+  - Insertion: **O(log n)**
+  - Lookup: **O(log n)**
+  - Deletion: **O(log n)**
+
+#### Example:
+```java
+import java.util.TreeSet;
+
+public class TreeSetExample {
+    public static void main(String[] args) {
+        TreeSet<String> set = new TreeSet<>();
+        
+        // Adding elements to TreeSet
+        set.add("Apple");
+        set.add("Banana");
+        set.add("Orange");
+        set.add("Apple"); // Duplicate, won't be added
+        
+        System.out.println("TreeSet: " + set);
+    }
+}
+```
+
+**Output**:
+```
+TreeSet: [Apple, Banana, Orange]
+```
+
+In `TreeSet`, the elements are stored in a **sorted order** (alphabetically for `String`s). Duplicate elements are not added.
+
+#### Example with Custom Comparator:
+You can also use a custom comparator to control the sorting order. For instance, let's sort the elements in **reverse order**:
+
+```java
+import java.util.*;
+
+public class TreeSetWithComparatorExample {
+    public static void main(String[] args) {
+        TreeSet<String> set = new TreeSet<>(Collections.reverseOrder());
+        
+        // Adding elements to TreeSet
+        set.add("Apple");
+        set.add("Banana");
+        set.add("Orange");
+        set.add("Apple"); // Duplicate, won't be added
+        
+        System.out.println("TreeSet (Reverse Order): " + set);
+    }
+}
+```
+
+**Output**:
+```
+TreeSet (Reverse Order): [Orange, Banana, Apple]
+```
+
+Here, the elements are sorted in **reverse alphabetical order**.
+
+---
+
+### **Comparison Table:**
+
+| Feature               | **HashSet**                              | **LinkedHashSet**                         | **TreeSet**                               |
+|-----------------------|------------------------------------------|-------------------------------------------|-------------------------------------------|
+| **Ordering**          | No specific order (unordered)           | Maintains insertion order                 | Stores elements in **sorted order**       |
+| **Duplicates**        | No duplicates allowed                    | No duplicates allowed                     | No duplicates allowed                     |
+| **Null values**       | Allows one `null` element                | Allows one `null` element                 | **Does not allow `null` values**          |
+| **Performance**       | Fast insertion, lookup, and removal (O(1)) | Similar to `HashSet` (O(1))               | Slower insertion and lookup (O(log n))    |
+| **Internal Data Structure** | Hash table (uses hashing)          | Hash table with linked list (uses hashing and maintains order) | Red-Black tree (sorted order)             |
+| **Use Cases**         | Use when insertion order doesn't matter | Use when insertion order is important     | Use when you need sorted data or natural ordering |
+
+### **When to Use Each:**
+- **Use `HashSet`**:
+  - When you need a **fast set** that doesn’t require ordering.
+  - For **unique** elements with no concern for order.
+  - When performance is crucial (insertion, removal, and lookup).
+  
+- **Use `LinkedHashSet`**:
+  - When you need a **set that maintains insertion order**.
+  - When you want **fast access** like a `HashSet`, but also need to preserve the order in which elements are added.
+
+- **Use `TreeSet`**:
+  - When you need the elements to be stored in **sorted order**.
+  - When you need **range queries** or **ordered traversal** (e.g., getting the smallest or largest elements).
+  - When you want to use a **custom comparator** to control the order of elements.
+
+---
+
+In conclusion:
+- **`HashSet`** is the most efficient for general use when you don't care about order.
+- **`LinkedHashSet`** is useful when order of insertion matters.
+- **`TreeSet`** is ideal when you need elements sorted in a natural order or using a custom comparator.

@@ -1,0 +1,177 @@
+The **Memento Design Pattern** is a behavioral design pattern that allows you to capture and externalize an object's internal state so that the object can be restored to this state later without violating encapsulation. The memento pattern is particularly useful when you want to save and restore the state of an object, for example, in scenarios like undo/redo functionality, checkpoints, or saving progress.
+
+### **Key Components of the Memento Pattern**:
+1. **Memento**: This object stores the state of another object. The memento has two roles:
+   - **Originator**: The object whose state we want to save.
+   - **Caretaker**: The object that is responsible for keeping and managing mementos, but doesn't modify the contents of the memento.
+   
+2. **Originator**: The object whose state is being saved and restored. It creates a **memento** to capture its state and can use the memento to restore its previous state.
+
+3. **Caretaker**: This object keeps the mementos, typically as a collection. It doesn't modify the memento or access its content, it just stores and retrieves it when needed.
+
+### **Real-Life Analogy**:
+
+Imagine you’re writing an essay on a word processor. While writing, you can periodically press "Save" to store your current progress. Later, if you decide that you don’t like the changes you made, you can "Undo" to go back to an earlier state.
+
+- The **Originator** is the document you're editing.
+- The **Memento** is a saved version of the document, containing the state (text, cursor position, etc.).
+- The **Caretaker** is responsible for saving the document's state (perhaps a history of saved versions) but doesn't alter the saved states.
+
+### **Example:**
+
+Let's use a **TextEditor** example where the user can type text, and we want to capture and restore the state of the text at different points in time.
+
+#### 1. **Memento Class** (stores the state of the text):
+
+```java
+public class TextEditorMemento {
+    private String text;
+
+    public TextEditorMemento(String text) {
+        this.text = text;
+    }
+
+    public String getText() {
+        return text;
+    }
+}
+```
+
+- **Memento** stores the state of the text (i.e., the text of the document).
+
+#### 2. **Originator Class** (the text editor whose state is saved and restored):
+
+```java
+public class TextEditor {
+    private String text;
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    // Create a memento object to save the state
+    public TextEditorMemento save() {
+        return new TextEditorMemento(this.text);
+    }
+
+    // Restore the state from a memento object
+    public void restore(TextEditorMemento memento) {
+        this.text = memento.getText();
+    }
+}
+```
+
+- The **Originator** (`TextEditor`) has a method `save()` that creates a memento containing the current state (`text`). It also has a `restore()` method to restore the text state from the memento.
+
+#### 3. **Caretaker Class** (manages mementos):
+
+```java
+import java.util.Stack;
+
+public class Caretaker {
+    private Stack<TextEditorMemento> mementoHistory = new Stack<>();
+
+    // Save the current state of the TextEditor
+    public void saveState(TextEditor editor) {
+        mementoHistory.push(editor.save());
+    }
+
+    // Restore the last saved state of the TextEditor
+    public void undo(TextEditor editor) {
+        if (!mementoHistory.isEmpty()) {
+            TextEditorMemento memento = mementoHistory.pop();
+            editor.restore(memento);
+        }
+    }
+
+    // Get the number of saved states
+    public int getSavedStatesCount() {
+        return mementoHistory.size();
+    }
+}
+```
+
+- The **Caretaker** class stores the mementos (using a stack in this case) and is responsible for saving and restoring states.
+- When a state is saved, the `saveState()` method adds the memento to the stack.
+- The `undo()` method retrieves the most recent memento and restores the state.
+
+#### 4. **Client Code**:
+
+```java
+public class MementoPatternExample {
+    public static void main(String[] args) {
+        // Create the originator (TextEditor) and caretaker
+        TextEditor editor = new TextEditor();
+        Caretaker caretaker = new Caretaker();
+
+        // Start typing text
+        editor.setText("Hello, World!");
+        System.out.println("Text after typing: " + editor.getText());
+
+        // Save state (memento)
+        caretaker.saveState(editor);
+
+        // Modify the text
+        editor.setText("Hello, Memento Pattern!");
+        System.out.println("Text after typing more: " + editor.getText());
+
+        // Save the new state
+        caretaker.saveState(editor);
+
+        // Modify the text again
+        editor.setText("Changed the text again...");
+        System.out.println("Text after typing again: " + editor.getText());
+
+        // Undo the last change
+        caretaker.undo(editor);
+        System.out.println("Text after undo: " + editor.getText());
+
+        // Undo the previous change (restore to the first saved state)
+        caretaker.undo(editor);
+        System.out.println("Text after second undo: " + editor.getText());
+    }
+}
+```
+
+### **Output**:
+
+```
+Text after typing: Hello, World!
+Text after typing more: Hello, Memento Pattern!
+Text after typing again: Changed the text again...
+Text after undo: Hello, Memento Pattern!
+Text after second undo: Hello, World!
+```
+
+### **Explanation**:
+
+1. **Originator**: The `TextEditor` is the originator, where we store and restore the text's state. It saves its state using the `save()` method, which creates a `Memento` object.
+2. **Memento**: The `TextEditorMemento` object stores the state of the `TextEditor` (the text content). This class is immutable and cannot be modified once created.
+3. **Caretaker**: The `Caretaker` is responsible for saving and restoring the state of the `TextEditor` by holding a history of `Memento` objects. It can also perform operations like `undo()` to go back to a previous state.
+4. **Client**: The `MementoPatternExample` demonstrates the usage of the `Memento` pattern by creating a text editor, modifying its text, saving its state, and then undoing the changes using the caretaker.
+
+### **Advantages of the Memento Pattern**:
+
+1. **Encapsulation is Preserved**: The internal state of the object is encapsulated in the `Memento` class, and the `Caretaker` cannot modify the state directly. It can only store and retrieve the memento.
+   
+2. **Undo/Redo Functionality**: The **Memento Pattern** is often used for implementing undo/redo functionality. By storing a history of mementos, you can easily undo changes to an object and revert it to a previous state.
+   
+3. **Separation of Concerns**: The `Originator`, `Memento`, and `Caretaker` classes each have a clear and distinct responsibility. This improves the maintainability and flexibility of the system.
+
+### **Disadvantages of the Memento Pattern**:
+
+1. **Memory Overhead**: Storing many mementos (especially for large objects) can consume a lot of memory, which could be a concern if the object’s state is large or if too many mementos are stored.
+   
+2. **Complexity**: While it can simplify undo/redo functionality, the pattern adds complexity by introducing additional classes (Memento, Caretaker).
+
+---
+
+### **Summary**:
+
+The **Memento Pattern** is a great way to provide an object with the ability to save and restore its state without breaking encapsulation. By storing snapshots of the object's state (in a memento), you can easily implement features like undo/redo functionality or save checkpoints, all while keeping the internal state hidden and protected from external manipulation.
+
+Let me know if you'd like further clarification!

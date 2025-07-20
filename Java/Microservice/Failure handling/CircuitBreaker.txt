@@ -1,0 +1,186 @@
+Certainly! Here's a detailed example of how to configure and use a **Circuit Breaker** in a Spring Boot application using **Resilience4j**, with the ability to define the number of failed requests for the state to transition to "open" and how it transitions to "half-open."
+
+### 1. **Dependencies Setup**
+
+First, you need to add the necessary dependencies for **Resilience4j** and **Spring Boot**.
+
+In your `pom.xml` (for Maven), add the following dependencies:
+
+```xml
+<dependency>
+    <groupId>io.github.resilience4j</groupId>
+    <artifactId>resilience4j-spring-boot2</artifactId>
+    <version>1.7.0</version> <!-- Make sure you use the latest version -->
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter</artifactId>
+</dependency>
+```
+
+### 2. **Defining the Circuit Breaker Configuration**
+
+In this example, we'll configure the **Circuit Breaker** using a **Java configuration class** that allows you to set specific parameters like the **failure rate threshold**, **minimum number of calls before opening the circuit**, and **wait time before transitioning to half-open state**.
+
+#### Example of Circuit Breaker Configuration:
+
+Create a configuration class to define the circuit breaker settings.
+
+```java
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.circuitbreaker.configure.CircuitBreakerRegistry;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.time.Duration;
+
+@Configuration
+public class CircuitBreakerConfig {
+
+    @Bean
+    public CircuitBreaker customCircuitBreaker() {
+        // Define custom Circuit Breaker configuration
+        CircuitBreakerConfig config = CircuitBreakerConfig.custom()
+                // Set failure rate threshold to 50%. The circuit breaker will open if 50% of the calls fail
+                .failureRateThreshold(50)
+                // Minimum number of calls before the circuit breaker can be opened (default is 10)
+                .minimumNumberOfCalls(5)
+                // Time window to measure failures (default is 1000ms)
+                .slidingWindowSize(10) // Track last 10 requests
+                // Transition to half-open state after 10 seconds
+                .waitDurationInOpenState(Duration.ofSeconds(10))
+                // Set the number of failed requests for opening (failure rate threshold)
+                .build();
+
+        // Register and return the circuit breaker with the given configuration
+        CircuitBreakerRegistry registry = CircuitBreakerRegistry.of(config);
+        return registry.circuitBreaker("paymentService");
+    }
+}
+```
+
+In this configuration:
+- **`failureRateThreshold(50)`**: This means the circuit breaker will open if more than 50% of the recent requests fail.
+- **`minimumNumberOfCalls(5)`**: This defines the minimum number of calls before the circuit breaker can decide to transition to the "open" state. This ensures that the circuit breaker does not trip based on a small number of requests.
+- **`slidingWindowSize(10)`**: The number of requests that the circuit breaker will consider when calculating failure rate. In this case, it considers the last 10 requests.
+- **`waitDurationInOpenState(Duration.ofSeconds(10))`**: After the circuit breaker opens, it will remain in the open state for 10 seconds before trying to transition to the "half-open" state.
+- **`CircuitBreaker("paymentService")`**: This defines the name of the circuit breaker, which will be used in your service method.
+
+### 3. **Service Implementation Using Circuit Breaker**
+
+Now, let’s apply the circuit breaker to a service method. The method will be protected by the `@CircuitBreaker` annotation, which automatically manages the circuit breaker’s state.
+
+```java
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class PaymentService {
+
+    @Autowired
+    private CircuitBreaker customCircuitBreaker;
+
+    @CircuitBreaker(name = "paymentService", fallbackMethod = "fallbackPaymentService")
+    public String processPayment(String paymentDetails) {
+        // Simulating a payment processing logic that could fail
+        if (Math.random() > 0.5) {  // Simulating a failure with a 50% chance
+            throw new RuntimeException("Payment service is unavailable");
+        }
+        return "Payment processed successfully!";
+    }
+
+    // Fallback method to handle the error when the Payment Service fails
+    public String fallbackPaymentService(String paymentDetails, Throwable t) {
+        return "Payment service is currently down. Please try again later.";
+    }
+}
+```
+
+In this `PaymentService`:
+- The method `processPayment` is wrapped with the `@CircuitBreaker` annotation.
+- If `processPayment` fails (throws an exception), the `fallbackPaymentService` method is called instead.
+- The **circuit breaker** named `paymentService` is applied to this method, meaning it uses the configuration defined in `CircuitBreakerConfig`.
+
+### 4. **Application Properties Configuration (Optional)**
+
+You can also specify default circuit breaker configurations in the `application.yml` (or `application.properties`) file. This allows you to provide default settings for circuit breakers without needing to define them in code.
+
+Example for `application.yml`:
+
+```yaml
+resilience4j.circuitbreaker:
+  instances:
+    paymentService:
+      failureRateThreshold: 50
+      slidingWindowSize: 10
+      minimumNumberOfCalls: 5
+      waitDurationInOpenState: 10000ms  # 10 seconds
+      recordExceptions:
+        - java.lang.RuntimeException
+```
+
+In this configuration:
+- We specify the same parameters (failure rate, window size, etc.) as in the `CircuitBreakerConfig` Java class.
+- The `waitDurationInOpenState: 10000ms` ensures that the circuit breaker stays open for 10 seconds before attempting to transition to the half-open state.
+
+### 5. **Testing the Circuit Breaker Behavior**
+
+Now that we have everything set up, let’s test the circuit breaker behavior. We will simulate a few requests, and based on the failure rate, the circuit breaker will open and close:
+
+- If 50% or more requests fail, the circuit breaker opens.
+- After the `waitDurationInOpenState` (10 seconds in this case), it transitions to a "half-open" state where it tries to test whether the service is back up by allowing a limited number of requests.
+- If the service works during the half-open state, the circuit breaker goes back to a "closed" state. Otherwise, it goes back to the "open" state.
+
+### Example Test Scenario:
+
+1. **Step 1: Send a few requests**
+   - On the first 5 requests, let’s say 3 fail, causing the failure rate to exceed 50%. The circuit breaker opens.
+   
+2. **Step 2: After 10 seconds (wait duration), the circuit breaker transitions to half-open**
+   - The next request is allowed, but if it fails again, the circuit breaker opens again.
+   
+3. **Step 3: If the request succeeds during the half-open phase**, the circuit breaker closes, and normal operation resumes.
+
+### 6. **Example of Application with Controller**
+
+Here’s how you might call the service from a REST controller to test the circuit breaker:
+
+```java
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class PaymentController {
+
+    @Autowired
+    private PaymentService paymentService;
+
+    @GetMapping("/process-payment")
+    public String processPayment(@RequestParam String paymentDetails) {
+        return paymentService.processPayment(paymentDetails);
+    }
+}
+```
+
+When you hit the `/process-payment` endpoint, it will trigger the circuit breaker logic in the `PaymentService`. Depending on the failure rate, the service will either succeed, fall back, or trigger the circuit breaker.
+
+### 7. **Monitoring Circuit Breaker State**
+
+You can also monitor the state of the circuit breaker. Resilience4j provides built-in metrics to monitor the state of the circuit breaker (whether it's open, closed, or half-open). You can use **Prometheus** or **Actuator** endpoints to track the state.
+
+For example, using Spring Boot Actuator, you can expose the circuit breaker status via the `/actuator/metrics` endpoint.
+
+### Conclusion
+
+In this detailed example, we've covered how to:
+- Define a **custom Circuit Breaker** configuration using Resilience4j.
+- Apply the circuit breaker to a method using the `@CircuitBreaker` annotation.
+- Configure circuit breaker parameters such as failure rate, minimum calls, sliding window size, and wait duration.
+- Provide a **fallback method** for handling service failures.
+- Test the behavior of the circuit breaker through requests and how it transitions between open, half-open, and closed states.
+
+By using this approach, you ensure that your microservices are resilient, preventing cascading failures while providing graceful degradation when failures occur.

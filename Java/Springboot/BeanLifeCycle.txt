@@ -1,0 +1,94 @@
+In Spring Boot, the bean lifecycle refers to the sequence of events that occur from the moment a Spring bean is created until it is destroyed. 
+Understanding this lifecycle is essential for managing resources effectively and ensuring that your application behaves as expected. Here's a detailed explanation of the bean lifecycle:
+
+### 1. **Bean Instantiation**
+
+The first step in the lifecycle is instantiating the bean. This is typically done through the Spring container using configuration metadata (XML, Java annotations, or Java configuration).
+
+- **Java Configuration**: Using `@Bean` in a `@Configuration` class.
+- **Component Scanning**: Using annotations like `@Component`, `@Service`, etc., which allow Spring to automatically discover and instantiate beans.
+
+### 2. **Dependency Injection**
+
+Once the bean is instantiated, Spring resolves its dependencies. This process can involve constructor injection, setter injection, or field injection.
+
+- **Constructor Injection**: Dependencies are provided through the bean's constructor.
+- **Setter Injection**: Dependencies are set using setter methods after the bean is instantiated.
+- **Field Injection**: Dependencies are injected directly into fields, typically using the `@Autowired` annotation.
+
+### 3. **Post-Initialization Callbacks**
+
+After the bean is instantiated and its dependencies are injected, the lifecycle proceeds with several optional callback methods:
+
+- **`@PostConstruct`**: If the bean has a method annotated with `@PostConstruct`, Spring will call this method after the dependencies have been injected but before the bean is made available to clients. This is a good place for initialization logic.
+
+### 4. **AOP Proxying (if applicable)**
+
+If the bean is subject to Aspect-Oriented Programming (AOP) proxies, this step involves creating a proxy object that intercepts method calls to the original bean. This is common for aspects like transaction management or logging.
+
+### 5. **Bean Usage**
+
+At this stage, the bean is ready for use. It can be accessed and utilized by other components in the application.
+
+### 6. **Pre-Destroy Callbacks**
+
+Before the bean is destroyed, Spring allows for cleanup and resource management:
+
+- **`@PreDestroy`**: If the bean has a method annotated with `@PreDestroy`, Spring will call this method before the bean is removed from the context. This is useful for releasing resources, closing connections, etc.
+
+### 7. **Destruction**
+
+Finally, the bean is destroyed. In a typical application, this occurs when the Spring application context is closed, which can happen during application shutdown or when the context is no longer needed.
+
+### Summary of the Bean Lifecycle Phases
+
+1. **Instantiation**: Creating the bean.
+2. **Dependency Injection**: Injecting dependencies.
+3. **Post-Initialization**: Calling `@PostConstruct` methods.
+4. **AOP Proxying**: Creating proxies if AOP is applied.
+5. **Usage**: The bean is now ready to be used.
+6. **Pre-Destroy**: Calling `@PreDestroy` methods.
+7. **Destruction**: Cleaning up resources and destroying the bean.
+
+### Example Code
+
+Here’s a simple example to illustrate the lifecycle:
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
+@Component
+public class MyBean {
+
+    private final Dependency dependency;
+
+    @Autowired
+    public MyBean(Dependency dependency) {
+        this.dependency = dependency;
+        System.out.println("MyBean instantiated with dependency");
+    }
+
+    @PostConstruct
+    public void init() {
+        System.out.println("MyBean is initialized");
+    }
+
+    @PreDestroy
+    public void cleanup() {
+        System.out.println("MyBean is being destroyed");
+    }
+}
+
+@Component
+class Dependency {
+    // Some dependency logic
+}
+```
+
+### Conclusion
+
+Understanding the bean lifecycle in Spring Boot helps you manage your beans effectively, ensuring proper initialization and cleanup. Using annotations like `@PostConstruct` and `@PreDestroy` can simplify resource management and ensure that your application behaves predictably.

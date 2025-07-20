@@ -1,0 +1,166 @@
+In Java, threads can be implemented in several ways. The main approaches are:
+
+1. **Extending the `Thread` class.**
+2. **Implementing the `Runnable` interface.**
+3. **Using `Callable` and `Future`.**
+4. **Using `ExecutorService` (Thread Pool).**
+
+Let’s look at each approach in detail with examples:
+
+### 1. **Extending the `Thread` class**
+
+This is the most straightforward way to create a thread. You simply extend the `Thread` class and override the `run()` method. 
+Then you create an instance of your class and call the `start()` method to begin the thread's execution.
+
+#### Example:
+
+```java
+class MyThread extends Thread {
+    @Override
+    public void run() {
+        System.out.println("Thread is running using Thread class.");
+    }
+
+    public static void main(String[] args) {
+        MyThread thread = new MyThread();
+        thread.start();  // Starts the thread
+    }
+}
+```
+
+### 2. **Implementing the `Runnable` interface**
+
+Another way to create a thread is by implementing the `Runnable` interface. The `Runnable` interface has a single method, `run()`, that you need to override. 
+The advantage of this approach is that your class can extend another class while still implementing `Runnable`.
+
+#### Example:
+
+```java
+class MyRunnable implements Runnable {
+    @Override
+    public void run() {
+        System.out.println("Thread is running using Runnable interface.");
+    }
+
+    public static void main(String[] args) {
+        MyRunnable myRunnable = new MyRunnable();
+        Thread thread = new Thread(myRunnable);
+        thread.start();  // Starts the thread
+    }
+}
+```
+
+### 3. **Using `Callable` and `Future`**
+
+The `Callable` interface is similar to `Runnable`, but it can return a result and throw exceptions. The result is retrieved using the `Future` object. 
+This is a more advanced option, particularly useful when you need to return a result from the thread.
+
+#### Example:
+
+```java
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+class MyCallable implements Callable<String> {
+    @Override
+    public String call() throws Exception {
+        return "Thread has completed its task using Callable.";
+    }
+
+    public static void main(String[] args) throws Exception {
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        MyCallable callableTask = new MyCallable();
+        Future<String> future = executorService.submit(callableTask);
+
+        // Get the result from the Future object
+        String result = future.get();
+        System.out.println(result);
+
+        executorService.shutdown();
+    }
+}
+```
+
+In this example, the `call()` method returns a result, and `Future.get()` retrieves that result.
+
+### 4. **Using `ExecutorService` (Thread Pool)**
+
+The `ExecutorService` framework provides a higher-level replacement for the manual thread creation approach. 
+It manages a pool of threads and allows you to submit tasks for execution. 
+This approach is more efficient for handling a large number of tasks, as it reuses threads from the pool.
+
+#### Example using `ExecutorService` with `Runnable`:
+
+```java
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+class MyRunnable implements Runnable {
+    @Override
+    public void run() {
+        System.out.println("Thread is running using ExecutorService.");
+    }
+
+    public static void main(String[] args) {
+        ExecutorService executorService = Executors.newFixedThreadPool(2); // Creating a thread pool with 2 threads
+        MyRunnable task1 = new MyRunnable();
+        MyRunnable task2 = new MyRunnable();
+        
+        executorService.submit(task1);  // Submit the task to the executor
+        executorService.submit(task2);
+
+        executorService.shutdown();  // Gracefully shut down the executor
+    }
+}
+```
+
+In this example:
+- The `ExecutorService` manages the threads and allows you to submit tasks for execution.
+- `newFixedThreadPool(2)` creates a thread pool with 2 threads that can handle multiple tasks.
+
+#### Example using `ExecutorService` with `Callable`:
+
+```java
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+class MyCallable implements Callable<String> {
+    @Override
+    public String call() {
+        return "Result from Callable task using ExecutorService.";
+    }
+
+    public static void main(String[] args) throws Exception {
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        MyCallable callableTask = new MyCallable();
+
+        Future<String> future = executorService.submit(callableTask); // Submit the callable task
+        String result = future.get();  // Retrieve the result
+
+        System.out.println(result);
+
+        executorService.shutdown();  // Gracefully shut down the executor
+    }
+}
+```
+
+### **Summary of Different Approaches:**
+
+| **Method**                      | **Description**                                                                                       |
+|----------------------------------|-------------------------------------------------------------------------------------------------------|
+| **Extending `Thread`**           | Create a custom thread by subclassing `Thread` and overriding `run()`. Simple but less flexible.     |
+| **Implementing `Runnable`**      | Implement `Runnable` interface, providing the `run()` method. Allows for extending other classes.     |
+| **Using `Callable` + `Future`**  | Similar to `Runnable`, but allows returning results and handling exceptions. Ideal for concurrent tasks requiring results. |
+| **Using `ExecutorService`**      | Manages thread pools, offering a higher-level approach for managing concurrency and reusing threads.   |
+
+Each of these methods has its use cases:
+- **Extend `Thread`** when you only need to define a simple task.
+- **Implement `Runnable`** when you want your task to be reusable or want to extend another class.
+- **Use `Callable` and `Future`** when you need to retrieve results or handle exceptions in concurrent tasks.
+- **Use `ExecutorService`** when managing large numbers of threads or when you want efficient thread reuse.
+
+Let me know if you want more details or have specific questions about any of these methods!
