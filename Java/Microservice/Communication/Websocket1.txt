@@ -1,0 +1,102 @@
+You're now looking at a **STOMP `CONNECT` frame**, which is the very first step a **STOMP-over-WebSocket client** takes to initiate communication with the server. Let me explain what this means and why it's important in your real-time WebSocket setup.
+
+---
+
+## 🔍 Frame Details Breakdown
+
+```json
+{
+  "command": "CONNECT",
+  "headers": {
+    "heart-beat": "25000,25000",
+    "accept-version": "1.2,1.1,1.0"
+  },
+  "body": ""
+}
+```
+
+---
+
+## 🧠 What is This?
+
+This is a **STOMP frame** sent **from the client to the server** when a new connection is being established over WebSocket.
+
+---
+
+## 🧾 Field-by-Field Explanation
+
+| Field                         | Meaning                                                                                                      |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **command: "CONNECT"**        | STOMP command indicating the client wants to establish a session.                                            |
+| **accept-version**            | The versions of the STOMP protocol the client supports. The server will select the most appropriate version. |
+| **heart-beat: "25000,25000"** | Heartbeat settings: client wants to send a ping every 25 seconds, and expects the server to do the same.     |
+| **body: ""**                  | The `CONNECT` frame has no body — it's just for session negotiation.                                         |
+
+---
+
+## 🔄 Connection Lifecycle with STOMP
+
+```text
+Client          Server
+  |               |
+  | --- CONNECT -->|   (Client initiates)
+  |               |
+  | <-- CONNECTED --|  (Server acknowledges + heartbeat settings)
+  |               |
+  | --- SUBSCRIBE -->|  (Client subscribes to a topic)
+  |               |
+  | <-- MESSAGE -----|  (Server sends messages to topic)
+```
+
+---
+
+## 🔌 Why Is `heart-beat` Important?
+
+It ensures the **connection stays alive**, even if there's no real data traffic.
+
+* `"25000,25000"` means:
+
+  * Client will send a heartbeat **every 25 seconds**
+  * Client expects to receive a heartbeat from server **every 25 seconds**
+* This helps detect **dead connections** (e.g., if the user loses internet).
+
+---
+
+## 🏁 Summary
+
+| Component        | Purpose                                       |
+| ---------------- | --------------------------------------------- |
+| `CONNECT` Frame  | Initiates STOMP session from client to server |
+| `accept-version` | Lets server choose STOMP protocol version     |
+| `heart-beat`     | Keeps connection alive and monitored          |
+| Empty `body`     | Normal — not needed for CONNECT               |
+
+---
+
+## ✅ After This CONNECT Frame
+
+If the connection is successful, the server replies with a **`CONNECTED` frame**, like this:
+
+```json
+{
+  "command": "CONNECTED",
+  "headers": {
+    "version": "1.2",
+    "heart-beat": "0,0"
+  }
+}
+```
+
+Then, the client can:
+
+* **Subscribe** to topics
+* **Send messages**
+* **Receive real-time events**
+
+---
+
+Let me know if you'd like:
+
+* To **customize heartbeats** for high-availability systems
+* Add **authentication headers** in the `CONNECT` frame
+* Handle **reconnection logic** on the frontend or backend

@@ -1,0 +1,139 @@
+The **Database per Service** pattern is a design pattern used in **microservices architecture** where **each microservice has its own dedicated database**. This means that instead of having a single, shared database accessed by all services, each service is responsible for maintaining its own data store. This promotes loose coupling, independent scaling, and autonomy among services.
+
+---
+
+## 🔍 Key Concepts of Database per Service Pattern
+
+### 1. **Service Independence**
+
+Each microservice owns and manages its own database schema, data logic, and transactions. This means:
+
+* Changes in one service’s data model don’t affect others.
+* Services can use the most suitable type of database (SQL, NoSQL, etc.).
+
+### 2. **Encapsulation**
+
+Data is encapsulated within the service boundary, and no other service can access the database directly. Data sharing, if needed, happens through APIs or asynchronous messaging.
+
+### 3. **Autonomy**
+
+A microservice can be developed, deployed, scaled, and managed independently since its data store is not shared.
+
+---
+
+## 🧠 Benefits of Database per Service Pattern
+
+| Benefit             | Description                                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| **Loose Coupling**  | Services don't depend on a shared schema or shared database, enabling independent evolution. |
+| **Scalability**     | Services and their databases can be scaled independently based on demand.                    |
+| **Flexibility**     | Each service can choose the database technology best suited to its needs.                    |
+| **Fault Isolation** | A failure in one database doesn't necessarily impact other services.                         |
+
+---
+
+## ⚠️ Challenges of Database per Service Pattern
+
+| Challenge                | Description                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- |
+| **Data Consistency**     | Maintaining consistency across services without shared transactions is difficult (eventual consistency). |
+| **Complex Queries**      | Cross-service queries become complex since joins across databases are not possible.                      |
+| **Data Duplication**     | Same data might be stored in multiple services for efficiency, leading to duplication.                   |
+| **Operational Overhead** | Managing multiple databases increases infrastructure and maintenance overhead.                           |
+
+---
+
+## 🏭 Real-World Example: E-Commerce Platform
+
+### Scenario: E-commerce platform with the following microservices:
+
+1. **User Service**
+2. **Product Service**
+3. **Order Service**
+4. **Inventory Service**
+5. **Payment Service**
+
+---
+
+### Database per Service Architecture:
+
+| Microservice          | Database   | Data                                        |
+| --------------------- | ---------- | ------------------------------------------- |
+| **User Service**      | PostgreSQL | User profiles, addresses, login credentials |
+| **Product Service**   | MongoDB    | Product details, categories, descriptions   |
+| **Order Service**     | MySQL      | Orders, order history, status               |
+| **Inventory Service** | Redis      | Stock levels, real-time availability        |
+| **Payment Service**   | PostgreSQL | Payment records, transaction logs           |
+
+---
+
+### Example Interaction:
+
+A customer places an order:
+
+1. **User Service** authenticates the user.
+2. **Product Service** fetches product details.
+3. **Inventory Service** checks stock availability.
+4. **Order Service** creates an order.
+5. **Payment Service** processes payment.
+
+Each service communicates via APIs and manages its data independently. If one service (like Inventory) goes down, others may still function (e.g., user browsing).
+
+---
+
+## 🔄 Data Sharing Strategies
+
+Since services can't query each other’s databases directly, they share data using:
+
+### 1. **Synchronous APIs**
+
+* One service calls another via HTTP/gRPC to get the required data.
+
+### 2. **Asynchronous Messaging/Event-Driven Architecture**
+
+* Services publish events (e.g., "OrderPlaced", "PaymentSuccessful").
+* Other services subscribe to events and update their own databases accordingly.
+
+---
+
+## 🧱 Best Practices
+
+* Use **API gateways** to control access to services.
+* Implement **eventual consistency** using **sagas** or **event sourcing** where needed.
+* Use **domain-driven design (DDD)** to define clear service boundaries.
+* Ensure **data ownership** is respected: only the owning service can modify its data.
+
+---
+
+## ✅ When to Use Database per Service
+
+* You are adopting **microservices architecture**.
+* Services must be independently deployable and scalable.
+* Your application needs high service autonomy and loose coupling.
+
+---
+
+## ❌ When to Avoid
+
+* You are using a **monolithic** or **modular monolith** architecture.
+* You have strong **transactional consistency** requirements across domains.
+* Your team lacks the capacity to manage multiple data stores.
+
+---
+
+## 🧩 Comparison with Other Patterns
+
+| Pattern                                   | Description                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Shared Database**                       | All services use a single database; easier consistency but tightly coupled.           |
+| **Database per Service**                  | Each service has its own database; promotes isolation but needs careful coordination. |
+| **Schema per Service (within shared DB)** | Single DB, but each service has its schema; middle-ground solution.                   |
+
+---
+
+## 📌 Summary
+
+The **Database per Service** pattern is ideal for microservices where autonomy, scalability, and flexibility are essential. It comes with complexity around data consistency and cross-service queries but supports a robust and resilient architecture when implemented correctly.
+
+---
+
