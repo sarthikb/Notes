@@ -2,7 +2,8 @@ In Java, exceptions are categorized into two main types: checked exceptions and 
 
 ### Checked Exceptions
 
-**Definition**: Checked exceptions are exceptions that are checked at compile-time. The Java compiler requires that these exceptions be either caught or declared to be thrown in the method signature using the `throws` keyword. These exceptions typically represent conditions that a reasonable application should attempt to recover from.
+**Definition**: Checked exceptions are exceptions that are checked at compile-time. The Java compiler requires that these exceptions be either caught or declared to be thrown in the method signature using the `throws` keyword. 
+These exceptions typically represent conditions that a reasonable application should attempt to recover from.
 
 **Examples**: `IOException`, `SQLException`, `ClassNotFoundException`
 
