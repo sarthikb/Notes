@@ -1,0 +1,315 @@
+Here's a **clear and detailed example** of implementing **JWT (JSON Web Token) authentication** in a Spring Boot application, complete with code and explanation of every step — from login to protected endpoints.
+
+---
+
+## 🔁 Overview: How JWT Flow Works
+
+1. **User logs in** with username/password → server verifies credentials.
+2. **Server returns a signed JWT** containing user identity and roles.
+3. **Client stores the token** (e.g. in localStorage, or in HTTP-only cookie).
+4. For each protected API request, **client sends token** in header:
+
+   ```
+   Authorization: Bearer <token>
+   ```
+5. **Server validates** the token (signature & expiration) and trusts embedded claims → grants access.
+6. **Server stays stateless**: no session stored, only token is held on client.
+
+🎯 JWT is self-contained, stateless, and great for REST APIs and microservices. ([Pranay Pourkar][1], [ByteGoblin][2], [Wikipedia][3], [Medium][4])
+
+---
+
+## 📦 Code Example: Spring Boot + JWT Authentication
+
+### 🔐 1. `JwtUtil` — generate & validate tokens
+
+```java
+@Component
+public class JwtUtil {
+    private final String SECRET = "your_secret_key_here";
+    private final long EXPIRATION = 1000 * 60 * 60; // 1h
+
+    public String generateToken(UserDetails userDetails) {
+        return Jwts.builder()
+            .setSubject(userDetails.getUsername())
+            .claim("roles", userDetails.getAuthorities())
+            .setIssuedAt(new Date())
+            .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
+            .signWith(SignatureAlgorithm.HS256, SECRET)
+            .compact();
+    }
+
+    public boolean validateToken(String token, UserDetails userDetails) {
+        final String username = extractUsername(token);
+        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+    }
+
+    public String extractUsername(String token) {
+        return Jwts.parser().setSigningKey(SECRET)
+            .parseClaimsJws(token).getBody().getSubject();
+    }
+
+    private boolean isTokenExpired(String token) {
+        return Jwts.parser().setSigningKey(SECRET)
+            .parseClaimsJws(token).getBody().getExpiration().before(new Date());
+    }
+}
+```
+
+---
+
+### 🧑‍💼 2. Authentication Controller to issue token
+
+```java
+@RestController
+public class AuthController {
+
+    @Autowired
+    private AuthenticationManager authManager;
+    @Autowired
+    private CustomUserDetailsService userDetailsService;
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @PostMapping("/authenticate")
+    public Map<String, String> login(@RequestBody AuthRequest req) throws Exception {
+        try {
+            authManager.authenticate(
+                new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword())
+            );
+        } catch (Exception ex) {
+            throw new Exception("Invalid credentials");
+        }
+        UserDetails user = userDetailsService.loadUserByUsername(req.getUsername());
+        String token = jwtUtil.generateToken(user);
+        return Map.of("jwt", token);
+    }
+}
+```
+
+`AuthRequest` is a simple POJO with `username` and `password` fields.
+
+---
+
+### 🧵 3. JWT Filter to validate on each request
+
+```java
+@Component
+public class JwtAuthFilter extends OncePerRequestFilter {
+
+    @Autowired private JwtUtil jwtUtil;
+    @Autowired private CustomUserDetailsService userDetailsService;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
+        throws ServletException, IOException {
+        
+        String header = req.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
+            String username = jwtUtil.extractUsername(token);
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails user = userDetailsService.loadUserByUsername(username);
+                if (jwtUtil.validateToken(token, user)) {
+                    UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            }
+        }
+        chain.doFilter(req, res);
+    }
+}
+```
+
+---
+
+### ⚙️ 4. Security Configuration
+
+```java
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Autowired private JwtAuthFilter jwtAuthFilter;
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/authenticate").permitAll()
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    public AuthenticationManager authMgr(HttpSecurity http, CustomUserDetailsService userDetailsService)
+        throws Exception {
+        return http.getSharedObject(AuthenticationManagerBuilder.class)
+            .userDetailsService(userDetailsService)
+            .passwordEncoder(new BCryptPasswordEncoder())
+            .and().build();
+    }
+}
+```
+
+* Stateless (no sessions) mode is enforced.
+* `/authenticate` is public; all other endpoints require a valid JWT. ([Syskool][5])
+
+---
+
+### 🛠️ 5. UserDetailsService (DB-backed)
+
+```java
+@Service
+public class CustomUserDetailsService implements UserDetailsService {
+    @Autowired private UserRepository repo;
+    @Override
+    public UserDetails loadUserByUsername(String username) {
+        UserEntity u = repo.findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        return new org.springframework.security.core.userdetails.User(
+            u.getUsername(), u.getPassword(),
+            List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+    }
+}
+```
+
+---
+
+### 🧪 6. Full Flow Recap
+
+1. POST `/authenticate` with credentials → get JWT.
+2. Client stores JWT.
+3. Client sends `Authorization: Bearer <token>` for protected endpoints.
+4. `JwtAuthFilter` validates token, loads user, sets authentication.
+5. Controller handles requests normally with `@AuthenticationPrincipal` or `SecurityContextHolder`.
+
+---
+
+## 🧠 Why Use JWT? (Advantages & Caveats)
+
+### ✅ Benefits
+
+* **Stateless** – no server sessions → easy scaling. ([ByteGoblin][2], [Java Tech Blog][6])
+* **Self-contained** – token includes user identity/roles. ([Medium][4])
+* Great for **microservices**, SPAs, and mobile clients.
+
+### ⚠️ Caveats
+
+* Revoking tokens is harder (cached until they expire).
+* If user roles change mid-token, the token may carry stale info. ([Pranay Pourkar][1], [Medium][4])
+* Requires secure storage on client to avoid XSS.
+
+---
+
+## 🧾 Summary Table
+
+| Component            | Responsibility                                 |
+| -------------------- | ---------------------------------------------- |
+| `JwtUtil`            | Generates and validates tokens                 |
+| `AuthController`     | Authenticates user and issues token            |
+| `JwtAuthFilter`      | Intercepts requests and verifies token         |
+| `SecurityConfig`     | Configures stateless security and filter chain |
+| `UserDetailsService` | Loads users from DB                            |
+
+---
+
+## 🚀 Next Steps?
+
+Would you like to:
+
+* Add **refresh tokens** for longer sessions?
+* Include **role-based authorization**?
+* Store tokens in cookies or use HttpOnly Secure storage?
+* Secure the secret key or move to RSA signing?
+
+Absolutely! Here's a **flowchart-style diagram** that visually represents the **JWT Authentication flow in a Spring Boot application**:
+
+---
+
+### 🗂️ JWT Authentication Flow (Spring Boot)
+
+```plaintext
+         +------------------------+
+         |   1. Client Login      |
+         | POST /authenticate     |
+         | { username, password } |
+         +-----------+------------+
+                     |
+                     v
+        +-----------------------------+
+        | Spring Security AuthManager |
+        | validates credentials       |
+        +-------------+---------------+
+                      |
+                      v
+        +------------------------------+
+        | 2. JWT Token is generated    |
+        | (with username, roles, exp)  |
+        +--------------+---------------+
+                       |
+                       v
+        +-------------------------------+
+        | 3. Token sent to client        |
+        | { jwt: <signed-token> }       |
+        +-------------------------------+
+
+                🔁 NEXT REQUEST 🔁
+
+        +------------------------------+
+        | 4. Client sends request      |
+        | GET /api/secure-data         |
+        | Header:                      |
+        | Authorization: Bearer <JWT>  |
+        +--------------+---------------+
+                       |
+                       v
+       +----------------------------------+
+       | 5. JwtAuthFilter (custom filter) |
+       | - Extracts & validates JWT       |
+       | - Loads UserDetails              |
+       | - Sets SecurityContext           |
+       +--------------+-------------------+
+                      |
+                      v
+       +-------------------------------+
+       | 6. Controller handles request |
+       | @GetMapping("/api/secure")    |
+       | Access granted if valid JWT   |
+       +-------------------------------+
+```
+
+---
+
+### 🔑 Summary of Steps
+
+| Step | Action                                          |
+| ---- | ----------------------------------------------- |
+| 1    | Client logs in with username/password           |
+| 2    | Spring Boot validates credentials               |
+| 3    | JWT token is generated & returned               |
+| 4    | Client sends JWT with each protected request    |
+| 5    | JWT filter validates token & authenticates user |
+| 6    | Controller responds (secured access)            |
+
+---
+
+### 📘 Token Contents (JWT Payload)
+
+```json
+{
+  "sub": "john_doe",
+  "roles": ["ROLE_USER"],
+  "iat": 1699990000,
+  "exp": 1700000000
+}
+```
+
+---
+

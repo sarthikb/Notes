@@ -1,0 +1,76 @@
+Great question! ✅ Let’s clarify the relationship between **OAuth 2.0** and **JWT** — because while they often work together, they’re not the same thing.
+
+---
+
+## 🔑 Short Answer:
+
+> **OAuth 2.0 can use JWTs** as **access tokens**, but it’s not required to.
+> When used together, you get **token-based authentication**, and yes — it's **JWT-based authentication** within the OAuth 2.0 framework.
+
+---
+
+## 📘 Detailed Explanation
+
+| Concept          | What It Is                                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **OAuth 2.0**    | A **framework** for **delegated authorization**. Defines flows like Authorization Code, Client Credentials, etc. |
+| **JWT**          | A **token format** — a compact, self-contained way to transmit claims securely                                   |
+| **Access Token** | The actual token OAuth 2.0 issues to access resources — can be **JWT**, opaque string, etc.                      |
+
+---
+
+## 🔄 How They Work Together
+
+When you use **Keycloak**, **Auth0**, or any modern IdP:
+
+* You authenticate via **OAuth 2.0 flow**
+* The IdP issues **JWT tokens**
+
+  * `access_token` → used to call protected APIs
+  * `id_token` → contains user identity info (OpenID Connect)
+* The **backend API** validates the JWT's signature and claims
+
+✅ This is what most people mean by "JWT authentication" — it's part of an OAuth 2.0 authorization flow.
+
+---
+
+## 🧠 Example (OAuth2 + JWT)
+
+**Authorization Code Flow** with OIDC:
+
+1. User logs in via OAuth2 client (e.g., frontend)
+2. Gets:
+
+   * `access_token` (JWT)
+   * `id_token` (JWT)
+   * `refresh_token` (optional)
+3. Frontend sends `access_token` → backend API
+4. Backend verifies:
+
+   * Signature
+   * Expiry
+   * Audience/issuer
+   * Scopes or roles
+5. If valid → user is authenticated and authorized
+
+---
+
+## ⚠️ JWT ≠ OAuth2
+
+| JWT by itself                         | OAuth 2.0 with JWT                           |
+| ------------------------------------- | -------------------------------------------- |
+| You generate/validate tokens manually | Tokens are part of OAuth flow issued by IdP  |
+| No standard way to authenticate user  | Defined flows and scopes for login & consent |
+| No built-in refresh/expiry handling   | Has refresh tokens, token revocation, scopes |
+
+---
+
+## ✅ Summary
+
+* **OAuth 2.0 is a protocol** for authorization.
+* **JWT is a token format** used *inside* OAuth 2.0 in many modern systems.
+* When Keycloak or any IdP issues a **JWT access token**, your backend does **JWT-based authentication** within the **OAuth 2.0 framework**.
+
+---
+
+

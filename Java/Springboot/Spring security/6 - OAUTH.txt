@@ -1,0 +1,425 @@
+Perfect — let’s now walk through a **real-world architecture** where:
+
+---
+
+## 🎯 Goal
+
+You have:
+
+* ✅ A **Frontend App** (e.g., React, Angular, Vue)
+* ✅ A **Backend REST API** (Spring Boot)
+* ✅ A centralized **Identity Provider (Keycloak)**
+
+You want to:
+
+* Let users log in via **Keycloak**
+* The frontend gets an **Access Token**
+* That token is sent to the backend via `Authorization: Bearer <token>`
+* The backend verifies the token and grants access to APIs
+
+---
+
+## 🧩 Components Overview
+
+```plaintext
++----------------+       +----------------+       +----------------+
+|  Frontend App  | <---> |   Keycloak     | <---> |   User Store   |
+| (React, Angular)|       | (Login + Tokens) |     | (DB or LDAP)    |
++----------------+       +----------------+       +----------------+
+       |
+       |  Access Token (Bearer)   [OAuth2 / OIDC]
+       ↓
++----------------------+
+|  Spring Boot Backend |
+|  (REST API Server)   |
+|  Validates JWT Token |
++----------------------+
+```
+
+---
+
+## 🧭 Authentication Flow Step-by-Step
+
+```plaintext
+1. Frontend → User clicks "Login"
+2. Redirect → Keycloak login page (OIDC Authorization Code Flow)
+3. User logs in → Keycloak redirects back with auth code
+4. Frontend exchanges code for Access Token (via token endpoint)
+5. Frontend stores the token (usually in memory or secure storage)
+6. Every API call → token is sent as Authorization: Bearer <token>
+7. Spring Boot backend validates the token
+8. If valid → access granted to protected API
+```
+
+---
+
+## 🧱 Tech Stack Summary
+
+| Component             | Tech                                 |
+| --------------------- | ------------------------------------ |
+| **Frontend**          | React / Angular / Vue                |
+| **Identity Provider** | Keycloak                             |
+| **API Backend**       | Spring Boot (OAuth2 Resource Server) |
+
+---
+
+## ⚙️ Spring Boot Backend Configuration (Resource Server)
+
+### 🔌 Add dependencies (`pom.xml`)
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-security</artifactId>
+</dependency>
+```
+
+---
+
+### 🛠️ `application.yml`
+
+```yaml
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/myrealm
+```
+
+> ✅ The `issuer-uri` is your Keycloak realm's OpenID Connect URL
+
+Example: `http://localhost:8080/realms/myrealm/.well-known/openid-configuration`
+
+---
+
+### 🧩 Secure the REST Controller
+
+```java
+@RestController
+@RequestMapping("/api")
+public class SecureApiController {
+
+    @GetMapping("/hello")
+    public String hello(Principal principal) {
+        return "Hello, " + principal.getName();
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_user')")
+    @GetMapping("/secure")
+    public String secure() {
+        return "You have access to secure data!";
+    }
+}
+```
+
+---
+
+### 🔐 Enable JWT Validation
+
+Spring Security will:
+
+* Automatically **decode the JWT**
+* Validate signature and expiration
+* Map roles from `realm_access.roles` claim
+
+To map roles properly, you may need a converter:
+
+```java
+@Bean
+public JwtAuthenticationConverter jwtAuthenticationConverter() {
+    JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
+    converter.setAuthoritiesClaimName("realm_access.roles");
+    converter.setAuthorityPrefix("ROLE_");
+
+    JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
+    jwtConverter.setJwtGrantedAuthoritiesConverter(converter);
+    return jwtConverter;
+}
+```
+
+Add it to the `SecurityFilterChain`.
+
+---
+
+## 🧩 Frontend Keycloak Integration (React or Angular)
+
+### Option 1: Use [Keycloak JS Adapter](https://www.keycloak.org/docs/latest/securing_apps/#_javascript_adapter)
+
+```javascript
+const keycloak = new Keycloak({
+  url: 'http://localhost:8080',
+  realm: 'myrealm',
+  clientId: 'frontend-app'
+});
+
+keycloak.init({ onLoad: 'login-required' }).then(authenticated => {
+  if (authenticated) {
+    const token = keycloak.token;
+    // Use token in API call
+    fetch('http://localhost:8081/api/secure', {
+      headers: {
+        Authorization: 'Bearer ' + token
+      }
+    });
+  }
+});
+```
+
+---
+
+## 🔒 How Token Validation Works in Spring Boot
+
+* Spring uses the **issuer URI** to fetch the realm’s public keys (`.well-known` endpoint).
+* It **decodes the JWT**, verifies signature and expiration.
+* Roles/permissions are extracted from claims like `realm_access.roles`.
+* If all checks pass → Spring lets request through.
+
+---
+
+## 🧾 Token Structure (Decoded JWT Example)
+
+```json
+{
+  "preferred_username": "john",
+  "email": "john@example.com",
+  "realm_access": {
+    "roles": ["user", "admin"]
+  },
+  "exp": 1720000000,
+  "iat": 1720000000,
+  "iss": "http://localhost:8080/realms/myrealm"
+}
+```
+
+---
+
+## ✅ Summary
+
+| Step | Who         | What                                           |
+| ---- | ----------- | ---------------------------------------------- |
+| 1    | Frontend    | Redirects to Keycloak                          |
+| 2    | Keycloak    | Authenticates user and issues Access Token     |
+| 3    | Frontend    | Stores Access Token                            |
+| 4    | API Request | Sends token in `Authorization: Bearer <token>` |
+| 5    | Spring Boot | Validates JWT and authorizes access            |
+
+---
+
+Great! Let's walk through how **OAuth 2.0** works with **Keycloak** as the Identity Provider (IdP), using a **Spring Boot application** as the client.
+
+---
+
+## 🔐 What is OAuth 2.0?
+
+OAuth 2.0 is a **delegated authorization** framework. Instead of handling user credentials directly, your app redirects the user to a **trusted Identity Provider (IdP)** like **Keycloak** for authentication. Once authenticated, your app receives a **token** to access protected resources.
+
+---
+
+## 🤝 Roles in OAuth 2.0
+
+| Role                     | Description                                          |
+| ------------------------ | ---------------------------------------------------- |
+| **Resource Owner**       | The user who owns the data (you)                     |
+| **Client**               | Spring Boot app                                      |
+| **Authorization Server** | Keycloak – handles login, issues tokens              |
+| **Resource Server**      | (Optional) APIs that validate token and provide data |
+
+---
+
+## 🔁 OAuth 2.0 Authorization Code Flow with Keycloak
+
+```
+[1] User tries to access a protected page
+     ↓
+[2] Spring Boot redirects to Keycloak login
+     ↓
+[3] User logs in on Keycloak login page
+     ↓
+[4] Keycloak redirects back to Spring Boot with auth code
+     ↓
+[5] Spring Boot exchanges auth code for an access token
+     ↓
+[6] Access token is stored in session (or used in REST calls)
+     ↓
+[7] User is now authenticated in your app
+```
+
+---
+
+## 🛠️ Example: Spring Boot + OAuth 2.0 Login via Keycloak
+
+---
+
+### 🔧 1. Set Up Keycloak (Locally or on Docker)
+
+Run Keycloak with Docker:
+
+```bash
+docker run -p 8080:8080 \
+  -e KEYCLOAK_ADMIN=admin \
+  -e KEYCLOAK_ADMIN_PASSWORD=admin \
+  quay.io/keycloak/keycloak:24.0.1 start-dev
+```
+
+Once Keycloak is running:
+
+* Go to `http://localhost:8080`
+
+* Log in as admin
+
+* Create a **Realm** (e.g., `demo-realm`)
+
+* Create a **Client** (e.g., `spring-boot-client`)
+
+  * Client ID: `spring-boot-client`
+  * Client Protocol: `openid-connect`
+  * Root URL: `http://localhost:8081/` (Spring Boot URL)
+  * Set **Access Type** to `confidential`
+  * Enable **Standard Flow**
+  * Add `http://localhost:8081/login/oauth2/code/keycloak` as a redirect URI
+
+* Create a **User** under this realm
+
+  * Set credentials (e.g., `user / password`)
+
+---
+
+### 📦 2. Spring Boot Application Setup
+
+#### 🔌 Add dependencies (`build.gradle` or `pom.xml`)
+
+```xml
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-oauth2-client</artifactId>
+</dependency>
+```
+
+---
+
+### ⚙️ 3. `application.yml`
+
+```yaml
+server:
+  port: 8081
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: spring-boot-client
+            client-secret: YOUR_CLIENT_SECRET
+            scope: openid,profile,email
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/demo-realm
+```
+
+Replace `YOUR_CLIENT_SECRET` with the actual secret from the Keycloak client settings.
+
+---
+
+### 🧑‍💻 4. Create Controller
+
+```java
+@Controller
+public class HomeController {
+
+    @GetMapping("/")
+    public String home(Model model, OAuth2AuthenticationToken authToken) {
+        model.addAttribute("name", authToken.getPrincipal().getAttribute("preferred_username"));
+        return "home";
+    }
+}
+```
+
+---
+
+### 🧾 5. `home.html` (Thymeleaf)
+
+```html
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><title>Home</title></head>
+<body>
+<h2>Welcome, <span th:text="${name}"></span>!</h2>
+<a href="/logout">Logout</a>
+</body>
+</html>
+```
+
+---
+
+### 🧪 Result
+
+1. Open `http://localhost:8081/`
+2. You are redirected to Keycloak login page
+3. Log in with the user created in Keycloak
+4. You are redirected back to Spring Boot with your user info displayed
+
+---
+
+## 🧠 Behind the Scenes
+
+| Step                       | Action                                                      |
+| -------------------------- | ----------------------------------------------------------- |
+| 🔑 OAuth2 Client           | Spring Boot uses Spring Security to act as an OAuth2 client |
+| 🔐 Authorization Server    | Keycloak authenticates and returns an authorization code    |
+| 🔄 Token Exchange          | Spring Boot exchanges code for Access + ID tokens           |
+| 📦 ID Token                | Contains user info (username, email, etc.)                  |
+| 🔐 Spring Security Context | Stores user details from the ID token                       |
+
+---
+
+## 🔒 What Gets Stored in the Token?
+
+**ID Token (JWT):**
+
+```json
+{
+  "sub": "user-id",
+  "preferred_username": "john",
+  "email": "john@example.com",
+  "realm_access": {
+    "roles": ["user"]
+  },
+  ...
+}
+```
+
+You can decode it at [https://jwt.io](https://jwt.io)
+
+---
+
+## ✅ Summary
+
+| Element      | Description                             |
+| ------------ | --------------------------------------- |
+| Keycloak     | OAuth 2.0 provider + login UI           |
+| Spring Boot  | OAuth 2.0 client using Spring Security  |
+| Session Auth | Maintained via Spring session + cookies |
+| Auth Flow    | Auth code → token → user info           |
+
+---
+
+## 🚀 Bonus: Protect APIs with Access Tokens?
+
+Want to build a **resource server** that checks tokens (JWT) directly?
+
+Let me know — I can show you how to:
+
+* Set up a Spring Boot **Resource Server**
+* Validate JWTs issued by Keycloak
+* Use roles from the token for `@PreAuthorize`
+
+Would you like to continue with that?
+

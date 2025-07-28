@@ -1,0 +1,21 @@
+Second Largest/ Third largest in a unsorted array : Use two or three variable and loop only once. 
+Max Product of 3 : Math.max(+ve higest * 2nd +ve highest * 3rd +ve higest, 1st +ve highest * 1 -ve min * 2nd neg min )
+move all 0 to the end: swap all non zero elements with the 0th index starting from 0th index. 0 index will be updated only in case of swap 
+Rotate Array by n index : Two reverses till n and till the size of array and then one full reverse 
+Stock Buy and Sell - Max one Transaction Allowed : Keep updating of min value so far and subtract it from value of current index and update the max diff.
+Remove All Occurrences of an Element in an Array : Explore the possibility of both equal to elements and not equal to and find a simpler solution.
+Rearrange Array Elements by Sign : use two temp array and then merge 
+Insert an adjacent duplicate for all occurrences of a given element : Two pointer technique with count of the element and the replacing from the end
+Majority Element : Traverse the array once:
+	-> If count is zero, set the candidate to the current element and set count to one.
+	-> If the current element equals the candidate, increment count.
+	-> If the current element differs from the candidate, decrement count.
+	Traverse the array again to count the occurrences of the candidate.
+
+Stock Buy and Sell - Multiple Transaction Allowed : accumulate diff if a[i] > a[i-1]
+Maximum Subarray Sum - Kadane's Algorithm : The idea of Kadane's algorithm is to traverse over the array from left to right and for each element, find the maximum sum among all subarrays ending at that element. The result will be the maximum of all these values. 	
+Number of subarrays having product less than K : Modified sliding window technique. (Number of possible suibarray in a range = high - low + 1)
+Split array into three equal sum segments : Sum of all elements, find subarrays with sum / 3
+
+
+
