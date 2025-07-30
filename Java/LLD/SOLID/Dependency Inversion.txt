@@ -2,7 +2,8 @@
 ### **Improved Example: Dependency Inversion Principle (DIP)**
 
 #### **Scenario:**
-We have a service that processes orders, and this service needs to handle payments. The payment methods can vary, so instead of having the `OrderService` directly depend on concrete payment classes (like `CreditCardPayment` or `PayPalPayment`), we'll use an interface to abstract the payment processing, making it flexible and easier to extend.
+We have a service that processes orders, and this service needs to handle payments. 
+The payment methods can vary, so instead of having the `OrderService` directly depend on concrete payment classes (like `CreditCardPayment` or `PayPalPayment`), we'll use an interface to abstract the payment processing, making it flexible and easier to extend.
 
 ---
 
