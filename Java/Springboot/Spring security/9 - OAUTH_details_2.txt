@@ -1,0 +1,130 @@
+OAuth 2.0 defines **four primary grant types** (aka flows), each suited to different scenarios. These grant types specify how a client obtains an **access token** from the **authorization server** to access resources on behalf of the **resource owner**.
+
+---
+
+## 🔑 1. **Authorization Code Grant (with PKCE)**
+
+### ✅ Use Case: **Web apps, SPAs, and mobile apps** (most secure)
+
+Used when the client can’t be fully trusted to keep secrets (e.g., in mobile or browser apps).
+
+### 🔄 Workflow:
+
+1. **Client redirects user** to Authorization Server with:
+
+   * `response_type=code`
+   * `client_id`, `redirect_uri`, `scope`, and **PKCE challenge**
+2. **User logs in** and grants access.
+3. **Authorization Server** redirects back with an **authorization code**.
+4. Client sends:
+
+   * `client_id`, `code`, `redirect_uri`, and **PKCE verifier**
+5. **Authorization Server** responds with:
+
+   * `access_token` (and optional `refresh_token`)
+6. Client uses `access_token` to call the Resource Server.
+
+### 🔒 PKCE: Adds extra protection by preventing code interception.
+
+### ✅ When to use:
+
+* **Web or mobile apps** where users authenticate via browser
+* Highly recommended for **public clients** (i.e., no client secret)
+
+---
+
+## 🧾 2. **Client Credentials Grant**
+
+### ✅ Use Case: **Machine-to-machine (M2M)** communication
+
+Used when a backend service needs to authenticate **itself** (no user involved).
+
+### 🔄 Workflow:
+
+1. Client (a server) sends request to Authorization Server with:
+
+   * `grant_type=client_credentials`
+   * `client_id`, `client_secret`
+2. **Authorization Server** validates the client and issues:
+
+   * `access_token`
+3. Client uses token to call the Resource Server.
+
+### ✅ When to use:
+
+* Cron jobs
+* API-to-API communication
+* Microservices within your infrastructure
+
+---
+
+## 👤 3. **Resource Owner Password Credentials Grant** (DEPRECATED / NOT RECOMMENDED)
+
+### ❌ Use Case: Only for trusted apps under strict control
+
+User provides username and password directly to the client (riskier approach).
+
+### 🔄 Workflow:
+
+1. Client collects:
+
+   * `username` + `password` + `client_id` + `client_secret`
+2. Sends them to the Authorization Server
+3. Authorization Server issues:
+
+   * `access_token` (and optionally `refresh_token`)
+4. Client uses token to access the resource.
+
+### ⚠️ Risks:
+
+* Client handles user credentials directly.
+* Not secure for most cases.
+* Largely deprecated in favor of other flows (like PKCE).
+
+### ✅ When to use:
+
+* Only when **you fully trust the client**, e.g., first-party apps
+* Otherwise, **avoid this grant**
+
+---
+
+## 🔁 4. **Implicit Grant** (LEGACY, NOT RECOMMENDED)
+
+### ❌ Use Case: Formerly used for SPAs (not anymore)
+
+Used to directly return an `access_token` in the browser redirect.
+
+### 🔄 Workflow:
+
+1. Redirect user with:
+
+   * `response_type=token`
+2. Authorization Server responds directly with:
+
+   * `access_token` in the URL fragment (`#access_token=...`)
+3. Client uses token to access resource.
+
+### ⚠️ Risks:
+
+* Tokens exposed in browser history and logs
+* No refresh tokens
+* Vulnerable to token leakage
+
+### ✅ When to use:
+
+* Don’t. Replaced by **Authorization Code + PKCE** for SPAs
+
+---
+
+## 📦 Summary Table
+
+| Grant Type                | User Involved? | Client Secret? | Use Case                      | Secure?   |
+| ------------------------- | -------------- | -------------- | ----------------------------- | --------- |
+| Authorization Code + PKCE | ✅ Yes          | 🚫 No (public) | Web/Mobile apps (recommended) | ✅ High    |
+| Client Credentials        | ❌ No           | ✅ Yes          | Server-to-server/M2M          | ✅ High    |
+| Resource Owner Password   | ✅ Yes          | ✅ Yes          | First-party apps (legacy)     | ⚠️ Medium |
+| Implicit                  | ✅ Yes          | 🚫 No          | SPAs (deprecated)             | ❌ Low     |
+
+---
+
+Would you like a diagram for each flow? I can generate those too.

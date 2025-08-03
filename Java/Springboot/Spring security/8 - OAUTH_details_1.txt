@@ -1,0 +1,56 @@
+OAuth (Open Authorization) is a framework that allows a user to grant limited access to their resources on one site (resource server) to another site (client) without exposing their credentials. It involves four main roles:
+
+---
+
+### **1. Resource Owner**
+
+**Definition**:
+The user who owns the data and grants access to a third-party application.
+
+**Real-world example**:
+You're the **resource owner** when you use your Google account to log into a third-party app like Spotify. You own your Google profile and email data.
+
+---
+
+### **2. Client**
+
+**Definition**:
+The third-party application requesting access to the user’s resources. It must be authorized by the resource owner and authenticated by the authorization server.
+
+**Real-world example**:
+**Spotify** is the **client** when it asks for permission to access your Google account information to help you sign up or log in.
+
+---
+
+### **3. Authorization Server**
+
+**Definition**:
+The server that authenticates the resource owner and issues access tokens to the client. It is responsible for verifying credentials and managing user consent.
+
+**Real-world example**:
+**accounts.google.com** is the **authorization server** when it handles the Google login prompt and issues an access token after you approve the request.
+
+---
+
+### **4. Resource Server**
+
+**Definition**:
+The server that hosts the protected user data (resources). It validates access tokens and serves data to the client if authorized.
+
+**Real-world example**:
+**Google’s APIs**, like the **Google People API**, act as the **resource server** when they serve your profile or contact information to Spotify after verifying the access token.
+
+---
+
+### 📌 Flow Overview in Real-World Terms
+
+Let’s say you're signing into Spotify with your Google account:
+
+1. You click “Sign in with Google” on Spotify.
+2. Spotify (Client) redirects you to Google (Authorization Server).
+3. You log in and approve access.
+4. Google issues an **authorization code**, then an **access token** to Spotify.
+5. Spotify uses the token to request your profile info from the **Google People API** (Resource Server).
+6. Google returns your data, and Spotify logs you in.
+
+---
