@@ -1,0 +1,47 @@
+Great question — the difference between **document stores** and **key-value stores** is subtle but important, especially in design interviews where you might need to justify *which NoSQL type* fits best.
+
+Let’s break it down simply and connect it to your HLD mindset.
+
+---
+
+## 🗂️ Key-Value vs Document Databases: What’s the difference?
+
+| Aspect         | Key-Value Store                        | Document Store                            |
+| -------------- | -------------------------------------- | ----------------------------------------- |
+| **Data Model** | Simple key + opaque value (blob)       | Key + structured JSON-like documents      |
+| **Querying**   | Lookup by key only (fast)              | Query on fields inside documents          |
+| **Schema**     | Usually schema-less, values opaque     | Schema-less but self-describing documents |
+| **Use Cases**  | Caching, session stores, user profiles | Complex nested data (e.g. orders, users)  |
+| **Examples**   | Redis, DynamoDB (in KV mode), Riak     | MongoDB, Couchbase, Firebase Firestore    |
+
+---
+
+## 🧠 Design Focus: When to choose which?
+
+### 1. **Key-Value Store — Use when:**
+
+* You only need **simple lookup by key** — no need to query inside data.
+* Values can be opaque blobs or strings.
+* Ultra low latency read/write.
+* Examples: caching sessions, user tokens, shopping cart state in a web app.
+
+**HLD tip:** When your microservice just needs **fast access to a small piece of data**, like “get cart for user 123,” key-value shines.
+
+---
+
+### 2. **Document Store — Use when:**
+
+* Data is **complex, nested, or hierarchical** (like JSON documents).
+* You want to **query/filter by fields inside** the documents.
+* Schema evolves often — you can add new fields without migrations.
+* Examples: user profiles with settings, blog posts with comments, product catalogs.
+
+**HLD tip:** When your microservice deals with **rich, flexible data models that you query on,** document stores are usually better.
+
+---
+
+### Quick question for you to check understanding:
+
+Say you’re designing a **shopping cart service** where each cart stores a list of items, quantities, and some metadata (discounts, timestamps). You need to retrieve and update the whole cart quickly.
+
+Would you lean toward key-value or document store here? Why?

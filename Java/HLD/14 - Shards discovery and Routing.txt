@@ -1,0 +1,77 @@
+Perfect — let’s move on to:
+
+---
+
+## 🚦 2. Shard Discovery & Routing (General)
+
+This is a critical piece: once you shard your DB, **how does your app know where to send queries?**
+Unlike MongoDB (which handles it via `mongos`), in many systems **you need to design or use a routing layer yourself.**
+
+---
+
+## 🧱 Three Common Routing Approaches
+
+| Approach                                  | How It Works                                                                | Pros                              | Cons                           |
+| ----------------------------------------- | --------------------------------------------------------------------------- | --------------------------------- | ------------------------------ |
+| 1. **Client-Side Routing**                | App uses a hash or lookup to choose the shard                               | Fast, no extra layer              | Tightly coupled to app logic   |
+| 2. **Middleware / Proxy-Based Routing**   | A router service (like `mongos`, Vitess, or custom) sits between app and DB | Centralized logic, easier updates | Extra hop + complexity         |
+| 3. **Service Discovery + Metadata Store** | App asks a discovery service or metadata layer (like config servers)        | Dynamic, scales well              | Needs reliable infra & caching |
+
+---
+
+## ⚙️ 1. **Client-Side Routing** (Manual or Library)
+
+* You implement hashing/range logic in your app
+* App chooses the DB/shard connection directly
+
+### Example:
+
+```python
+shard_num = hash(user_id) % 4
+db = connect_to_shard(shard_num)
+```
+
+### 🔑 Real-world use:
+
+* Simpler systems (early-stage services)
+* Fastest path, but hard to change shard logic later
+
+---
+
+## 🌐 2. **Proxy-Based Routing**
+
+* Use a service (e.g., **Vitess** for MySQL) that handles:
+
+  * Shard lookups
+  * Query rewriting
+  * Load balancing
+
+### Real-world example:
+
+* **YouTube** uses **Vitess** for MySQL sharding
+* Proxy handles cross-shard routing, online resharding, etc.
+
+> You talk to the proxy → it talks to the right shard
+
+---
+
+## 📡 3. **Discovery Service + Metadata**
+
+* A config service stores shard-to-range or shard-to-hash info
+* App or proxy queries this to know where to route requests
+* Used in large distributed systems like:
+
+  * **Cassandra**
+  * **CockroachDB**
+  * **Spanner**
+
+---
+
+### 🧠 Quick Check:
+
+Let’s say you’re building a write-heavy system and you shard by `user_id`.
+
+What are the **pros and cons** of keeping routing logic in the client code vs using a proxy router (like Vitess)?
+Which one would you choose for long-term maintainability?
+
+

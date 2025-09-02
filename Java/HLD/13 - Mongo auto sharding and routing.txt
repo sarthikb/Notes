@@ -1,0 +1,91 @@
+Excellent — MongoDB is one of the most **interviewed-on NoSQL DBs**, and it has solid support for **auto-sharding**, **built-in routing**, and even **background rebalancing**. Let's walk through it in layers:
+
+---
+
+## 🍃 How MongoDB Auto-Sharding Works
+
+MongoDB supports **native sharding**, where the cluster automatically:
+
+1. **Distributes data** across shards
+2. **Balances load**
+3. **Routes queries** correctly
+
+…and all of this is done with **no need for app-level routing logic**.
+
+---
+
+## 🔧 1. Key Components of MongoDB Sharding
+
+| Component          | Purpose                                                          |
+| ------------------ | ---------------------------------------------------------------- |
+| **Shard**          | A physical DB node that stores a portion of the data             |
+| **mongos**         | A **query router** used by the application to access the cluster |
+| **Config Servers** | Store the metadata about data distribution and sharding          |
+
+So instead of your app knowing which shard to talk to, it talks to **`mongos`**, which figures it out.
+
+---
+
+## 🗂️ 2. How You Shard a Collection
+
+When you shard a collection in MongoDB:
+
+* You choose a **shard key** (e.g. `userId`)
+* MongoDB splits data into **chunks** based on that key
+* These chunks are **distributed across shards**
+
+```js
+sh.shardCollection("mydb.users", { userId: 1 })
+```
+
+You can use **range-based** or **hashed** sharding strategies.
+
+---
+
+## 🔁 3. Automatic Rebalancing
+
+### ✅ What MongoDB Does Automatically:
+
+* It **monitors chunk sizes** across shards
+* If one shard has too many chunks (i.e., too much data), it triggers **automatic migration**
+* It uses a **balancer process** to move chunks in the background
+* During migration:
+
+  * The chunk is copied
+  * Writes are forwarded
+  * Once copied, the old chunk is removed
+
+You **don’t need to write the rebalancing logic** — MongoDB handles it for you.
+
+> ⛔ But: You **must choose your shard key carefully**. If it's too skewed, balancing won't help much.
+
+---
+
+## 🔁 Example: How Routing Works
+
+Imagine you’ve sharded `orders` on `userId` with hashed sharding.
+
+* The app sends a query:
+  `db.orders.find({ userId: 123 })`
+* `mongos`:
+
+  * Hashes the `userId`
+  * Looks up the config servers to see which shard owns that hash range
+  * Sends the query **directly to that shard**
+
+If the query doesn’t include the shard key:
+
+* `mongos` may **scatter-gather** across all shards → this is slow
+
+---
+
+## 🔍 Summary (Interview-Ready)
+
+> MongoDB supports auto-sharding using a **shard key**, and relies on `mongos` as a smart router.
+> Data is divided into chunks and balanced automatically. The config servers maintain metadata about chunk placement, and the balancer handles **live migrations** when shards grow unevenly.
+> Developers don’t need to manage rebalancing, but they **must choose the right shard key** to avoid hotspots and scatter queries.
+
+---
+
+Would you like to go hands-on and walk through designing a MongoDB sharding strategy for a specific use case?
+Or shall we move on to our next core topic: **shard discovery and routing in general (outside MongoDB)**?

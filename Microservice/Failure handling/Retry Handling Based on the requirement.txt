@@ -1,0 +1,87 @@
+Exactly — the **ideal way to deal with failures** using retry and circuit breaker depends heavily on your **use case, business criticality**, and **failure type**. There's no one-size-fits-all, but here’s how to reason about it in a principled way:
+
+---
+
+## ✅ **1. When to Use Retry**
+
+Use **retry** when:
+
+| ✅ Conditions                         | 🧠 Why                                                              |
+| ------------------------------------ | ------------------------------------------------------------------- |
+| Failure is **transient**             | It might succeed shortly (e.g., timeout, 429, network blip)         |
+| Operation is **idempotent**          | Retrying won't cause duplicate side effects (e.g., a `GET` request) |
+| Latency budget allows it             | You can afford a few seconds of delay                               |
+| External service is usually reliable | Temporary hiccup rather than a systemic failure                     |
+
+### 🔁 Common Examples:
+
+* Calling a third-party payment gateway or REST API
+* Reading from a cloud database
+* Pushing a message to a queue or topic
+
+---
+
+## ❌ **When NOT to Retry**
+
+Don't retry if:
+
+| ❌ Condition                                     | 🛑 Reason                                             |
+| ----------------------------------------------- | ----------------------------------------------------- |
+| Error is **client-side** or permanent           | Like validation failures, 400s, authentication errors |
+| Operation is **not idempotent**                 | Retrying may cause double writes/payments             |
+| You're inside a fallback already                | Retry within a fallback = **retry storm** risk        |
+| You're handling **bulk or streaming** workloads | Retries can kill throughput if not limited            |
+
+---
+
+## 🔌 **2. When to Use Circuit Breaker**
+
+Circuit breakers are for:
+
+| ✅ Condition                        | 🔍 Purpose                                             |
+| ---------------------------------- | ------------------------------------------------------ |
+| Protecting a **critical service**  | Avoid hammering a dependency that's already struggling |
+| Reducing **latency** under load    | Immediately fail instead of waiting for timeouts       |
+| Building a **self-healing system** | Automatically resume when service recovers             |
+
+Think of it like a **tripwire**: fail fast, protect the rest of your system, try again later.
+
+---
+
+## 🧩 **Combining Retry + Circuit Breaker (Best Practice)**
+
+* ✅ **Retry first** (with backoff + jitter) for quick, transient failures.
+* ⛔ **Stop retrying** once the circuit breaker opens.
+* ✅ **Fallback gracefully** if all else fails.
+
+### Example Flow:
+
+```plaintext
+Try → Retry (2–3 times) → Circuit opens → Fallback → Log/Alert
+```
+
+---
+
+## 🎯 Real-World Decision Matrix
+
+| Use Case                     | Retry?     | Circuit Breaker? | Fallback?                    |
+| ---------------------------- | ---------- | ---------------- | ---------------------------- |
+| REST call to another service | ✅          | ✅                | ✅ (return cached/default)    |
+| Write to database            | ⚠️ Maybe\* | ✅                | ⚠️ Maybe (log + retry later) |
+| Send confirmation email      | ✅          | ❌                | ✅ (queue it instead)         |
+| Validate user input          | ❌          | ❌                | ❌ (fail fast)                |
+| Payment processing           | ✅          | ✅                | ✅ (queue/manual retry)       |
+| Cache miss fetching data     | ✅          | ✅                | ✅ (return stale)             |
+
+\* Only retry if the write is **idempotent or safe to retry**.
+
+---
+
+## 🔥 TL;DR Guidelines
+
+* **Retry for temporary problems** — but use backoff and limit attempts.
+* **Circuit breakers** protect systems when retries can't help.
+* **Fallbacks** let you degrade gracefully without crashing everything.
+* **Log and monitor everything** — resilience patterns mean nothing without visibility.
+
+---

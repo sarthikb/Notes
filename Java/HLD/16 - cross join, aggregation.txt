@@ -1,0 +1,153 @@
+Perfect — this topic is all about handling the **hard edge cases** in a sharded environment.
+
+---
+
+## 🌐 4. Cross-Shard Queries / Joins
+
+### 🎯 The Problem:
+
+Once your data is **sharded**, it’s no longer all in one place.
+So if a query or join needs data across **multiple shards**, you run into:
+
+* **Latency** (need to contact multiple shards)
+* **Complexity** (data colocation, partial results)
+* **Inconsistency** (replicas might be out of sync)
+
+---
+
+## 🔍 Common Scenarios Where This Happens
+
+1. **Joins** between tables sharded on different keys
+   → e.g., Users by user\_id and Orders by order\_id
+
+2. **Aggregation queries** that scan the whole dataset
+   → e.g., `count(*)`, `avg(revenue)`, etc.
+
+3. **Range scans** that don’t include the shard key
+   → e.g., `SELECT * FROM orders WHERE date > X`
+
+---
+
+## 🛠️ How to Handle Cross-Shard Queries
+
+Here are your main tools:
+
+### ✅ 1. **Scatter-Gather**
+
+* Query is broadcast to all shards
+* Results are merged by router or app
+
+> ⚠️ Works but **expensive** — avoid when possible
+
+---
+
+### ✅ 2. **Co-locate Related Data**
+
+* If `users` and `orders` are often queried together, **shard them by the same key** (`user_id`)
+
+> This makes joins **local to the shard**, not cross-shard
+
+---
+
+### ✅ 3. **Denormalization**
+
+* Store a **copy** of related data inside each document
+* Common in MongoDB, Cassandra
+
+> Improves read performance, but harder to keep in sync
+
+---
+
+### ✅ 4. **Pre-Aggregation Pipelines**
+
+* Use background jobs (e.g., Kafka + consumers) to maintain summary tables
+* Avoid live cross-shard scans
+
+> Great for dashboards, trending queries, etc.
+
+---
+
+## 🔁 In SQL DBs: You Often Just Avoid Joins
+
+* MySQL + Vitess and Citus for Postgres support **cross-shard joins**, but with limitations
+* It’s often better to **model your data to avoid them**
+
+---
+
+### ❓ Interview Question for You:
+
+Let’s say you have:
+
+* `users` sharded by `user_id`
+* `orders` sharded by `order_id`
+
+Now you need to get **all orders for a user**.
+
+What’s the performance problem here?
+And how might you redesign to avoid it?
+
+Take a shot.
+
+
+💯 Yes — you're spot on.
+
+Cross-shard joins and aggregations are exactly why **materialized views** (or **pre-aggregated read stores**) are such a common pattern in distributed systems.
+
+Let’s unpack this a little before you answer the earlier question:
+
+---
+
+## 📚 Why Materialized Views Help
+
+Imagine this:
+
+* You have millions of users and billions of orders
+* Orders are sharded by `order_id`
+* Now you want: *“Give me all orders for user 42”*
+
+This needs a **cross-shard scan** — unless orders are co-located or indexed by `user_id`.
+
+---
+
+### ✅ Materialized View to the Rescue
+
+You can have a separate data store (or table) like:
+
+```
+user_orders = {
+   user_id_1: [order_id_1, order_id_7, ...],
+   user_id_2: [...],
+}
+```
+
+* Pre-computed and denormalized
+* Updated via CDC, Kafka, event sourcing, etc.
+* Stored in a read-optimized DB (could be NoSQL, KV store, or wide-column)
+
+Now:
+
+* Reads are **fast**, **local**, and **shard-aware**
+* Joins are **avoided entirely**
+* You trade **write complexity for read performance**
+
+---
+
+## ✅ You're Right:
+
+This is **exactly** why real-world systems like:
+
+* Uber (using Schemaless)
+* LinkedIn (with Espresso)
+* Facebook (with TAO)
+
+…all use materialized views, secondary indexes, or read-optimized stores.
+
+---
+
+With that context in mind — want to take a shot at the question now?
+
+> `users` are sharded by `user_id`
+> `orders` are sharded by `order_id`
+> You need to query **all orders for a given user**
+
+What’s the problem, and how would you redesign it?

@@ -1,0 +1,136 @@
+Yes — **retry and circuit breaker** are commonly **combined** in resilient systems, especially in **microservices** and **cloud-native** applications.
+
+Together, they help:
+
+* **Retry** transient failures automatically (e.g., timeouts, 500 errors).
+* **Circuit Breaker** stops calling a service temporarily if repeated failures happen — to avoid making things worse.
+
+---
+
+## 🔄 Retry + 🔌 Circuit Breaker (Why Combine?)
+
+| Pattern             | Purpose                                                       |
+| ------------------- | ------------------------------------------------------------- |
+| **Retry**           | Handle short-lived, recoverable failures                      |
+| **Circuit Breaker** | Prevent cascading failures from persistently failing services |
+
+By combining them:
+
+* You first try retries on intermittent issues.
+* If the service keeps failing, the circuit breaker **"opens"** to stop calling it temporarily.
+
+---
+
+## ✅ Java Example Using [**Resilience4j**](https://resilience4j.readme.io/)
+
+Resilience4j is a lightweight fault tolerance library for Java 8+ that supports both **Retry** and **CircuitBreaker**, and works well with **Spring Boot**.
+
+---
+
+### 🧩 Maven Dependencies
+
+```xml
+<dependency>
+    <groupId>io.github.resilience4j</groupId>
+    <artifactId>resilience4j-spring-boot2</artifactId>
+    <version>1.7.1</version>
+</dependency>
+```
+
+---
+
+### ⚙️ Java Config + Usage Example
+
+```java
+import io.github.resilience4j.retry.*;
+import io.github.resilience4j.circuitbreaker.*;
+import io.github.resilience4j.decorators.Decorators;
+
+import java.time.Duration;
+import java.util.function.Supplier;
+
+public class ResilientService {
+
+    public static void main(String[] args) {
+
+        // Circuit Breaker setup
+        CircuitBreakerConfig cbConfig = CircuitBreakerConfig.custom()
+                .failureRateThreshold(50)       // Open if 50% of requests fail
+                .waitDurationInOpenState(Duration.ofSeconds(30)) // Wait 30s before retrying
+                .slidingWindowSize(10)         // Check the last 10 calls
+                .build();
+        CircuitBreaker circuitBreaker = CircuitBreaker.of("myServiceCB", cbConfig);
+
+        // Retry setup
+        RetryConfig retryConfig = RetryConfig.custom()
+                .maxAttempts(3)
+                .waitDuration(Duration.ofSeconds(2)) // exponential backoff can be added manually
+                .retryExceptions(RuntimeException.class)
+                .build();
+        Retry retry = Retry.of("myServiceRetry", retryConfig);
+
+        // Simulated remote call
+        Supplier<String> remoteCall = () -> {
+            System.out.println("Trying remote call...");
+            throw new RuntimeException("Service is down!");
+        };
+
+        // Decorate the call with retry + circuit breaker
+        Supplier<String> decoratedCall = Decorators.ofSupplier(remoteCall)
+                .withCircuitBreaker(circuitBreaker)
+                .withRetry(retry)
+                .decorate();
+
+        // Execute the decorated call
+        try {
+            String result = decoratedCall.get();
+            System.out.println("Result: " + result);
+        } catch (Exception ex) {
+            System.out.println("Final failure after retries and circuit breaker: " + ex.getMessage());
+        }
+    }
+}
+```
+
+---
+
+### 🧠 What Happens Here
+
+* You try the `remoteCall` up to 3 times (retry).
+* If failures exceed 50% of the last 10 calls, the **circuit breaker opens** for 30 seconds.
+* While open, any call **fails immediately** without trying.
+* After the wait period, it goes into **half-open** and tries again.
+
+---
+
+## 📦 Alternative: Use with Spring Boot (Auto-config)
+
+You can also annotate methods with:
+
+```java
+@Retry(name = "myServiceRetry")
+@CircuitBreaker(name = "myServiceCB", fallbackMethod = "fallback")
+public String callExternalService() {
+    // logic here
+}
+```
+
+With properties defined in `application.yml`.
+
+---
+
+## ✅ Summary
+
+| Pattern         | Tool         | Purpose                                  |
+| --------------- | ------------ | ---------------------------------------- |
+| Retry           | Resilience4j | Handle temporary issues                  |
+| Circuit Breaker | Resilience4j | Prevent repeated bad calls               |
+| Combined Use    | Yes          | Retry first, stop if it fails repeatedly |
+
+---
+
+Let me know if you want:
+
+* A Spring Boot + Resilience4j demo
+* Async/non-blocking version
+* Integration with Feign/RestTemplate/HttpClient

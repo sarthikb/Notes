@@ -1,0 +1,89 @@
+Great question! The **feed update mechanism** on platforms like Instagram is a classic challenge in high-scale systems — balancing freshness, latency, and scalability.
+
+Let’s break down **how feed updates work** at a high level, then I’ll guide you through the key design patterns used.
+
+---
+
+## 🧩 How Instagram Feed Updates Work: Overview
+
+When a user opens Instagram and views their feed, the app shows posts from:
+
+* People they follow
+* Sponsored posts (ads)
+* Suggested content (explore)
+
+### Two main strategies exist for feed generation:
+
+---
+
+### 1️⃣ **Pull Model (On-demand feed generation)**
+
+* The feed service **queries the latest posts from the user’s followees in real-time** when the feed is opened.
+* Pros: Always fresh, no extra storage for feed copies.
+* Cons: High latency and heavy computation on every request.
+
+---
+
+### 2️⃣ **Push Model (Precomputed feed or fan-out)**
+
+* When a user posts something, the system **pushes that post ID into the feeds of all their followers** (fan-out).
+* Followers' feeds are precomputed and stored, so fetching is fast.
+* Pros: Fast feed reads.
+* Cons: High write amplification (especially for celebrities with millions of followers).
+
+---
+
+### Instagram uses a **hybrid approach** depending on the user:
+
+* **Heavy users and those with few followers:** use fan-out (push).
+* **Celebrities and very popular users:** use pull on-demand to avoid huge fan-out.
+
+---
+
+## 🧱 Typical Feed Update Flow (Push Model)
+
+1. User A uploads a post.
+2. PostService stores post metadata and media.
+3. PostService emits `post_created` event.
+4. FeedService consumes this event.
+5. FeedService fans out the post ID to **followers' feed stores** (like Redis, Cassandra).
+6. When a follower opens the app:
+
+   * The client calls FeedService.
+   * FeedService returns the precomputed feed (list of post IDs + metadata).
+   * Client loads media URLs from CDN/object storage.
+
+---
+
+## 🗄️ Data Storage for Feeds
+
+* Feed entries are stored in **fast key-value stores** (Redis, Cassandra) indexed by user ID.
+* Each user has a sorted list (by time) of post IDs.
+* Metadata may be cached or retrieved separately for flexibility.
+
+---
+
+## 🧠 So what happens when the user opens Instagram?
+
+* The app calls FeedService → returns feed posts immediately (low latency).
+* FeedService fetches from **precomputed feed cache/store**.
+* Media URLs are served via CDN.
+* If the feed needs refreshing (e.g., pull model for celebrities), it may query the post DB on-demand.
+
+---
+
+## Bonus: How do ads or suggestions get inserted?
+
+* Ad-serving system injects sponsored post IDs into the feed at controlled positions.
+* Machine learning recommendations insert suggested content dynamically or during feed precomputation.
+
+---
+
+### Quick check for you:
+
+* Which feed model (push or pull) would cause high write amplification if a user has 10 million followers?
+* Why might Instagram avoid fan-out for celebrity accounts?
+
+---
+
+Want to sketch this flow diagram or discuss how consistency and freshness guarantees are managed?

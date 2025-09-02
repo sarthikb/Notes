@@ -1,0 +1,214 @@
+You're asking a **great question** — and you're 100% right to observe that **routing is not the same as load balancing**. So let’s **break it down** from the inside out:
+
+---
+
+## 🎯 Goal:
+
+Understand **how a software load balancer like NGINX actually balances load** — **not just routes traffic**, but **spreads it** across servers.
+
+---
+
+## 🧠 Basic Definition
+
+A **software load balancer** (like NGINX, HAProxy, Envoy) is a program that:
+
+1. **Listens on a public-facing port**
+2. Accepts incoming requests (usually HTTP/HTTPS or TCP)
+3. Forwards them to **one of many backend servers**
+4. Uses a **load balancing algorithm** to decide *which* backend to forward to
+5. Can perform **health checks**, retries, SSL termination, etc.
+
+---
+
+## 📦 Think of It As:
+
+```
+         +-----------+
+Client → |  NGINX    | → Server A (192.168.1.101:3000)
+         | Load Bal. | → Server B (192.168.1.102:3000)
+         +-----------+ → Server C (192.168.1.103:3000)
+```
+
+Each request from the client goes to **NGINX**, and **NGINX decides** which backend server to send the request to.
+
+---
+
+## 🔍 What Happens Internally (NGINX HTTP Load Balancing)
+
+### Let’s say this is your config:
+
+```nginx
+http {
+  upstream backend_app {
+    server 192.168.1.101:3000;
+    server 192.168.1.102:3000;
+    server 192.168.1.103:3000;
+  }
+
+  server {
+    listen 80;
+
+    location / {
+      proxy_pass http://backend_app;
+    }
+  }
+}
+```
+
+### 🔄 What Happens for Each Request
+
+1. **NGINX receives a request** on port `80`
+2. It checks the URL `/`, and applies the matching location block
+3. NGINX sees `proxy_pass` → it's a reverse proxy
+4. It consults the **upstream block (`backend_app`)**
+5. Uses its **load balancing algorithm** (default: round robin) to choose a backend
+6. Opens a connection to, say, `192.168.1.102:3000`
+7. Forwards the HTTP request
+8. Waits for response
+9. Forwards response to client
+
+### 🛠️ Optional Features:
+
+* Keeps alive multiple TCP connections (keep-alive)
+* Caches DNS results of backends
+* Retries on failure
+* Marks servers "down" if they fail health checks
+
+---
+
+## 🔁 Load Balancing Algorithms in NGINX
+
+You can choose how NGINX decides which server to use:
+
+| Algorithm     | What it does                                   |
+| ------------- | ---------------------------------------------- |
+| `round-robin` | Default. Distributes requests evenly           |
+| `least_conn`  | Chooses the server with the fewest connections |
+| `ip_hash`     | Keeps same client IP on same server (sticky)   |
+| `hash`        | Custom consistent hash (e.g., URL)             |
+
+#### Example: Least Connections
+
+```nginx
+upstream backend_app {
+  least_conn;
+  server 192.168.1.101:3000;
+  server 192.168.1.102:3000;
+}
+```
+
+> NGINX tracks how many connections each backend has and sends the next request to the least busy one.
+
+---
+
+## 🧪 Real-World Example
+
+Imagine you're building **a login system** that connects to 3 backend servers.
+
+* All 3 run a Node.js app that exposes port 3000
+* You put NGINX in front of them as a reverse proxy + load balancer
+
+When **100 users hit `/login`**, NGINX:
+
+1. Accepts all 100 connections
+2. Uses round-robin (or least\_conn) to spread requests evenly across all 3 servers
+3. Ensures no single backend gets overloaded
+
+If one server crashes? NGINX stops sending traffic to it (if health checks are configured).
+
+---
+
+## 💬 "But isn't that just routing?"
+
+🔁 Good distinction.
+
+| **Routing**            | **Load Balancing**                       |
+| ---------------------- | ---------------------------------------- |
+| Forwards based on URL  | Forwards based on backend load/algorithm |
+| e.g. `/api` → backend1 | e.g. all `/` spread across 3 backends    |
+| Mostly static          | Dynamic based on current server state    |
+
+> Routing = “Where should this URL go?”
+> Load Balancing = “Which *copy* of the service should handle this request?”
+
+---
+
+## 🔥 Internal Metrics Tracked by NGINX (for load balancing)
+
+To make its decisions, NGINX tracks:
+
+* Active connections per server
+* Server response times (if using advanced modules)
+* Server failures/timeouts (for retries/failover)
+* Cached DNS and IP resolution
+
+---
+
+## 👨‍🔬 You Can Even Use Health Checks
+
+```nginx
+upstream backend_app {
+  server 192.168.1.101:3000;
+  server 192.168.1.102:3000;
+  server 192.168.1.103:3000;
+  health_check;
+}
+```
+
+> NGINX will automatically **stop sending traffic** to unhealthy backends.
+
+---
+
+## 🏗️ Internal Data Structure
+
+Inside NGINX’s memory:
+
+* A list of backend servers (`upstream`)
+* Counters: connection count, failures
+* Hashes: IP → server (for sticky sessions)
+* Routing rules per location block
+
+---
+
+## 📈 How It Looks in Action
+
+### Diagram:
+
+```
+Clients
+  |
+  v
+[ NGINX Load Balancer ]
+  |         |         |
+  v         v         v
+Server A  Server B  Server C
+```
+
+Each request hits NGINX → NGINX chooses a backend (A, B, or C) → forwards request → collects response.
+
+---
+
+## 🧠 Summary
+
+| Concept          | Details                            |
+| ---------------- | ---------------------------------- |
+| NGINX as Proxy   | Accepts incoming traffic           |
+| Decision Process | Uses load-balancing algorithm      |
+| Target Selection | Picks a backend server             |
+| Load-Aware       | Can track connections and failures |
+| Dynamic          | Works even if some servers go down |
+
+---
+
+## ✅ Real-World Usage Example
+
+**Use Case:** Serving a React app with Express.js APIs behind NGINX
+
+* 3 Express servers handle `/api/*`
+* 1 NGINX load balancer in front
+* You configure NGINX with `least_conn` to prevent overloading
+* Bonus: Set up NGINX to cache static assets, compress them, and retry failed requests
+
+> 🎯 Now you have a full software-based load balancing system running **without cloud services**.
+
+---

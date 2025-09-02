@@ -1,0 +1,145 @@
+Awesome — let’s walk through a **realistic, scalable feed generation architecture** like Instagram's, using:
+
+* **Kafka** for event streaming
+* **Redis** for fast feed reads
+* **PostgreSQL or Cassandra** for post storage
+* **Lightweight ML ranker** to personalize the feed
+
+We’ll break it down into clear steps so you can picture **who does what, when, and where**.
+
+---
+
+## 🧠 GOAL
+
+Design a system where:
+
+* Feed is **updated when someone posts**
+* Feed is **ranked per user** with a simple ML score
+* High-follower users don’t flood the system
+* Feed is **read quickly** (within 100–300ms)
+
+---
+
+## 🧱 COMPONENTS
+
+| Service / DB                  | Purpose                                 |
+| ----------------------------- | --------------------------------------- |
+| `PostService`                 | Handles post creation and storage       |
+| `FeedService`                 | Builds user feeds                       |
+| `Kafka (post_created)`        | Streams post events                     |
+| `FeedWorker` (consumer)       | Processes post events from Kafka        |
+| `Redis`                       | Stores per-user feed (fast lookup)      |
+| `PostDB (Postgres/Cassandra)` | Stores full post metadata               |
+| `RankerService`               | Ranks feed posts using basic ML scoring |
+| `ViewService`                 | Exposes APIs for feed viewing           |
+| `UserGraphService`            | Knows who follows whom                  |
+
+---
+
+## 🟢 POST CREATION FLOW
+
+```plaintext
+1. User A creates a post
+2. PostService:
+    - Saves post to PostDB
+    - Emits `post_created` event to Kafka with:
+      { post_id, user_id, timestamp }
+```
+
+---
+
+## 🔄 FAN-OUT FLOW (For Normal Users)
+
+```plaintext
+3. FeedWorker consumes `post_created` from Kafka
+4. Calls UserGraphService to get followers of user A
+5. For each follower:
+    - Calls RankerService to assign a score (e.g., based on closeness, recency, etc.)
+    - Inserts (post_id, score) into follower’s feed in Redis (sorted set: `feed:user_id`)
+```
+
+✅ Redis Sorted Set (ZSET) is perfect here:
+
+```bash
+ZADD feed:john_doe 0.91 post_123
+```
+
+---
+
+## 🚫 IF CELEBRITY POSTS
+
+FeedWorker **detects celebrity post** (e.g., has 10M+ followers):
+
+* **Skips fan-out**
+* Stores metadata in PostDB
+* Followers will **pull** this post when they open feed
+
+---
+
+## 🟡 VIEWING THE FEED
+
+```plaintext
+1. User opens the app → hits ViewService
+2. ViewService:
+    - Reads top N post_ids from Redis (`ZREVRANGE feed:user_id 0 49`)
+    - Pulls full post data from PostDB
+    - (Optionally) fetches top celebrity posts on-demand
+    - Sorts/merges final list
+3. Returns list of post metadata + media URLs (CDN-backed)
+```
+
+---
+
+## 🧠 LIGHTWEIGHT ML RANKER (INLINE SCORING)
+
+When FeedWorker adds a post to a user’s feed, it calls RankerService:
+
+```python
+score = 0.6 * friend_score + 0.3 * recency + 0.1 * engagement_likelihood
+```
+
+* `friend_score`: closeness (e.g., # of DMs, likes)
+* `recency`: time since post
+* `engagement`: predicted based on past behavior
+
+This score is used in the Redis ZSET so that feed is **auto-ranked**.
+
+---
+
+## ⏱ TTL & Trimming Strategy
+
+* Redis feed stores only **last 500–1000 posts** per user
+* Old ones are evicted or trimmed using `ZREMRANGEBYRANK`
+* Posts are stored forever in PostDB, just not kept in active feed
+
+---
+
+## ✅ Key Advantages
+
+| Feature         | How It's Achieved                         |
+| --------------- | ----------------------------------------- |
+| Fast feed read  | Precomputed Redis ZSET per user           |
+| Scalability     | Hybrid push/pull for different user sizes |
+| Personalization | Score via RankerService                   |
+| Freshness       | Kafka-based real-time updates             |
+| CDN usage       | Images and videos are served via CDN URLs |
+
+---
+
+### ⚙️ Optional Add-ons
+
+* **Backfill Service**: To fill gaps if Redis is empty or expired
+* **Story Feed**: Same pattern, but different visibility rules
+* **Feed invalidation**: For deleted posts (soft delete + Kafka `post_deleted`)
+
+---
+
+## Want to Try a Mini Design Challenge?
+
+Imagine your RankerService is too slow. What would you do:
+
+* Cache scores?
+* Precompute rankings daily?
+* Move ranking to the client?
+
+(Your thoughts first — then I’ll walk through real-world trade-offs.)

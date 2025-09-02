@@ -1,0 +1,138 @@
+**Spring Boot Actuator** is a powerful feature of Spring Boot that provides **production-ready monitoring and management** tools for your application — with **zero or minimal configuration**.
+
+---
+
+## 🔍 What is Spring Boot Actuator?
+
+Spring Boot Actuator exposes a set of **built-in endpoints** that let you:
+
+* Monitor the health of the application
+* Track metrics like memory, threads, CPU, etc.
+* View application environment, properties, and beans
+* Check database connections, caches, HTTP traces, etc.
+* Interact with the app (shutdown, refresh, etc.)
+
+It's especially useful for **DevOps**, **SREs**, and **monitoring tools** like Prometheus, Grafana, or ELK.
+
+---
+
+## ✅ How to Enable Spring Boot Actuator
+
+Add the dependency in your `pom.xml` or `build.gradle`:
+
+```xml
+<!-- Maven -->
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+```
+
+---
+
+## ⚙️ Default Actuator Endpoints
+
+After adding the actuator starter, some endpoints become available (like `/actuator/health`).
+
+Examples:
+
+| Endpoint              | Description                               |
+| --------------------- | ----------------------------------------- |
+| `/actuator/health`    | Shows application health status           |
+| `/actuator/metrics`   | Exposes metrics (memory, threads, etc.)   |
+| `/actuator/info`      | Custom info from `application.properties` |
+| `/actuator/env`       | Shows environment properties              |
+| `/actuator/beans`     | Lists all Spring beans                    |
+| `/actuator/httptrace` | Shows recent HTTP request traces          |
+
+> Accessing these depends on configuration — by default, only a few are exposed.
+
+---
+
+## 🔒 Configure Endpoint Exposure and Security
+
+You can configure which endpoints are available and how secure they are.
+
+### Example – `application.properties`:
+
+```properties
+management.endpoints.web.exposure.include=health,info,metrics,env,beans
+management.endpoint.health.show-details=always
+management.endpoints.web.base-path=/actuator
+```
+
+> Use `*` to expose all endpoints:
+> `management.endpoints.web.exposure.include=*` (Not recommended in production)
+
+### 🔐 Secure Actuator Endpoints:
+
+Spring Security auto-applies to actuator endpoints if on classpath:
+
+```java
+@Configuration
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+          .authorizeRequests()
+          .requestMatchers("/actuator/**").hasRole("ADMIN")
+          .and()
+          .httpBasic();
+    }
+}
+```
+
+---
+
+## 📊 Integration with Monitoring Tools
+
+Actuator integrates with tools like:
+
+* **Prometheus** (via `micrometer-registry-prometheus`)
+* **Grafana**
+* **ELK Stack (Elastic, Logstash, Kibana)**
+* **New Relic, Datadog**, etc.
+
+Just add the right Micrometer registry dependency and you're good to go.
+
+```xml
+<!-- For Prometheus -->
+<dependency>
+  <groupId>io.micrometer</groupId>
+  <artifactId>micrometer-registry-prometheus</artifactId>
+</dependency>
+```
+
+---
+
+## 🧪 Custom Endpoints
+
+You can also define your **own actuator endpoints**:
+
+```java
+@Component
+@Endpoint(id = "customStatus")
+public class CustomStatusEndpoint {
+
+    @ReadOperation
+    public Map<String, Object> status() {
+        return Map.of("app", "running", "timestamp", Instant.now());
+    }
+}
+```
+
+---
+
+## 🧠 Summary
+
+| Feature                                         | Description |
+| ----------------------------------------------- | ----------- |
+| Provides metrics, health checks, and monitoring | Yes         |
+| Easy integration with Prometheus, Grafana       | Yes         |
+| Highly customizable and extensible              | Yes         |
+| Secured and configurable                        | Yes         |
+
+---
+
+Want a live example with Prometheus & Grafana dashboard setup? I can help with that too.

@@ -1,0 +1,96 @@
+Great topic! Let's break down the concept of **first-level cache** in the **JPA `EntityManager`**.
+
+---
+
+## 🔹 What Is the First-Level Cache?
+
+The **first-level cache** is an internal cache maintained by the **`EntityManager`** in JPA (or Hibernate’s `Session`).
+
+### ✅ Key Characteristics:
+
+* **Scoped to a single `EntityManager`** (i.e., per transaction or persistence context).
+* **Enabled by default** — you don’t need to configure it.
+* It **caches entities** that are managed within the current persistence context.
+* Prevents **duplicate SQL queries** for the same entity within a single transaction.
+
+---
+
+## 🧠 How It Works
+
+When you use `entityManager.find()` or `getReference()`:
+
+1. **First**, it checks the **first-level cache** (aka the persistence context).
+2. If the entity is **found in the cache**, it returns it **without querying the database**.
+3. If not found, it **queries the database**, stores it in the cache, and returns it.
+
+---
+
+## 🧪 Example
+
+```java
+@Transactional
+public void demoFirstLevelCache() {
+    User user1 = entityManager.find(User.class, 1L); // Hits DB
+    User user2 = entityManager.find(User.class, 1L); // Comes from cache
+
+    System.out.println(user1 == user2); // true (same object in memory)
+}
+```
+
+### 🔍 Observation:
+
+* Even though `find()` is called twice, the database is only hit **once**.
+* Both calls return the **same instance**, showing that caching is working.
+
+---
+
+## 🔄 When Is the Cache Cleared?
+
+The first-level cache is cleared:
+
+* When the **transaction ends** (or `EntityManager` is closed).
+* When you **explicitly clear** it:
+
+```java
+entityManager.clear(); // removes all managed entities
+```
+
+Or selectively:
+
+```java
+entityManager.detach(entity); // removes specific entity from context
+```
+
+---
+
+## ⚠️ Important Notes
+
+| Behavior                            | Explanation                                 |
+| ----------------------------------- | ------------------------------------------- |
+| One cache per `EntityManager`       | Not shared across multiple transactions     |
+| Avoids repeated DB queries          | As long as you use the same `EntityManager` |
+| Works only for **managed** entities | Detached entities aren’t part of the cache  |
+| Can be manually cleared             | Using `clear()` or `detach()`               |
+
+---
+
+## 🆚 First-Level vs Second-Level Cache
+
+| Feature       | First-Level Cache             | Second-Level Cache                        |
+| ------------- | ----------------------------- | ----------------------------------------- |
+| Scope         | Per `EntityManager` / session | Shared across sessions (`SessionFactory`) |
+| Configuration | Built-in, automatic           | Needs manual setup                        |
+| Lifetime      | Ends with transaction/session | Lives longer (app-wide, configurable)     |
+| Tech          | JPA spec                      | Hibernate feature (not JPA standard)      |
+
+---
+
+## ✅ Summary
+
+* **First-level cache** is automatic, per-`EntityManager`, and helps prevent duplicate DB calls.
+* It ensures that within a transaction, the **same entity is not queried multiple times**.
+* You can clear or detach from it when needed, but usually, it just works out of the box.
+
+---
+
+Let me know if you want to see SQL logs showing the effect of first-level cache in action!

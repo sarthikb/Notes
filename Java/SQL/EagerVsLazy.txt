@@ -1,0 +1,89 @@
+Great question! Let's look at the **difference between Lazy and Eager fetching**, especially in the context of **JPA/Hibernate** (though the concept applies generally to data loading).
+
+---
+
+## 🔍 Definitions
+
+### ✅ **Eager Fetching**
+
+* Associated entities are **loaded immediately** with the parent entity.
+* Happens at the time of the initial query.
+
+### ✅ **Lazy Fetching**
+
+* Associated entities are **loaded only when accessed** (on demand).
+* A proxy object is returned initially, and the data is fetched only when needed.
+
+---
+
+## 🧪 Example
+
+Let's say you have two entities: `User` and `Address`.
+
+```java
+@Entity
+public class User {
+    @Id
+    private Long id;
+
+    @OneToOne(fetch = FetchType.EAGER)
+    private Address address;
+}
+```
+
+With `FetchType.EAGER`, when you load a `User`, the associated `Address` is fetched **immediately**, even if you never use it.
+
+With `FetchType.LAZY`:
+
+```java
+@OneToOne(fetch = FetchType.LAZY)
+private Address address;
+```
+
+The `address` is fetched **only when you call** `user.getAddress()`.
+
+---
+
+## 🧠 Key Differences
+
+| Feature                      | Eager Fetching                          | Lazy Fetching                                           |
+| ---------------------------- | --------------------------------------- | ------------------------------------------------------- |
+| **When data is loaded**      | Immediately with the parent entity      | Only when the relation is accessed                      |
+| **Performance impact**       | May cause **unnecessary joins**, slower | More efficient if related data isn't needed             |
+| **Risk**                     | N+1 query problem if used improperly    | LazyInitializationException if accessed outside session |
+| **Default for `@ManyToOne`** | EAGER                                   | LAZY                                                    |
+| **Default for `@OneToMany`** | LAZY                                    | LAZY                                                    |
+
+---
+
+## 🧨 Common Pitfall with Lazy
+
+### ❌ `LazyInitializationException`
+
+Occurs when you try to access a lazy-loaded association **outside a transaction/session**:
+
+```java
+User user = userRepository.findById(1L).get();
+// Session is closed now
+Address address = user.getAddress();  // ❌ Exception!
+```
+
+✅ To fix:
+
+* Use **fetch joins**
+* Or initialize data within the transaction
+* Or use DTOs to fetch what you need directly
+
+---
+
+## 🏁 Summary
+
+| Use Case                           | Recommended Fetching Strategy |
+| ---------------------------------- | ----------------------------- |
+| Relationship is always accessed    | EAGER                         |
+| Large or optional collections      | LAZY                          |
+| Performance-sensitive applications | LAZY + fetch join selectively |
+
+---
+
+Let me know if you'd like a working example or to see how to optimize using `JOIN FETCH` in queries.

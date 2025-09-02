@@ -1,0 +1,107 @@
+The **N+1 select problem** is a common performance issue in **ORM frameworks** like Hibernate and JPA, where your application ends up executing **1 query to fetch a parent entity**, and **N additional queries** to fetch its associated child entities — one for each parent row.
+
+---
+
+## ❗ What Is the N+1 Select Problem?
+
+Let’s say you want to fetch all `Users` and their `Addresses`.
+
+If you write:
+
+```java
+List<User> users = userRepository.findAll();
+for (User user : users) {
+    Address address = user.getAddress();  // triggers another query
+}
+```
+
+What happens:
+
+1. **1 SQL query** to get all users:
+   `SELECT * FROM users;`
+
+2. Then for **each user (N)**, a new SQL query runs:
+   `SELECT * FROM addresses WHERE user_id = ?;`
+
+So if you have 100 users, you'll run **1 + 100 = 101 queries**. 😵
+
+---
+
+## 🔍 Why It Happens
+
+By default, associations like `@OneToOne`, `@OneToMany`, or `@ManyToOne` are often **`FetchType.LAZY`** — they load data **only when accessed**.
+This is good for memory, but bad if you’re going to need them all anyway.
+
+---
+
+## ✅ How to Fix the N+1 Problem
+
+### 🔹 1. Use `JOIN FETCH` in JPQL or HQL
+
+```java
+@Query("SELECT u FROM User u JOIN FETCH u.address")
+List<User> findAllWithAddress();
+```
+
+This performs a **single SQL query** with a join:
+
+```sql
+SELECT * FROM users u JOIN addresses a ON u.id = a.user_id;
+```
+
+### 🔹 2. Use Entity Graphs
+
+If you want to fetch associations **dynamically**, use JPA’s `@EntityGraph`:
+
+```java
+@EntityGraph(attributePaths = {"address"})
+List<User> findAll();
+```
+
+This tells JPA to fetch `address` eagerly for this query only.
+
+### 🔹 3. Use DTO Projections
+
+Instead of fetching entities, fetch only what you need:
+
+```java
+@Query("SELECT new com.example.UserDTO(u.name, a.city) FROM User u JOIN u.address a")
+List<UserDTO> findUsersWithAddress();
+```
+
+This avoids unnecessary entity loading and proxy resolution.
+
+### 🔹 4. Batch Fetching (Advanced)
+
+In Hibernate:
+
+```properties
+hibernate.default_batch_fetch_size=16
+```
+
+This won't eliminate N+1 entirely but **reduces it to fewer, batched selects**.
+
+---
+
+## ⚠️ When to Use What?
+
+| Fix            | Best When                                         |
+| -------------- | ------------------------------------------------- |
+| `JOIN FETCH`   | You always need the child entities                |
+| `@EntityGraph` | You want selective eager loading                  |
+| DTO Projection | You need specific fields only                     |
+| Batch Fetching | You can't change the query but want fewer queries |
+
+---
+
+## ✅ Summary
+
+| Problem       | N+1 Select Problem                           |
+| ------------- | -------------------------------------------- |
+| Why it occurs | Lazy loading inside loops                    |
+| Result        | 1 query + N separate queries                 |
+| Fixes         | `JOIN FETCH`, `@EntityGraph`, DTOs, batching |
+
+---
+
+Let me know if you’d like a runnable example or want to test the SQL queries generated under the hood!

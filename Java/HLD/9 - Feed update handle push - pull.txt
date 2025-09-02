@@ -1,0 +1,64 @@
+✅ **Exactly right.** You nailed it.
+
+---
+
+## 💥 The Problem with Push Model for High-Follower Users
+
+Let’s say **User A** has **10 million followers**, and they post a new photo:
+
+### 🔁 In Push (Fan-out) Model:
+
+* The system **writes that post ID** to **10 million individual feeds**
+* That means:
+
+  * 10 million **write operations**
+  * Potential load spikes on FeedService
+  * High I/O cost, potential queuing delays
+  * Storage bloat — even inactive users get updates they might never read
+
+---
+
+## 🧠 Why That’s a Problem
+
+| Issue               | Result                           |
+| ------------------- | -------------------------------- |
+| Write amplification | Slower write time, infra strain  |
+| Wasted resources    | Updates pushed to inactive users |
+| Difficult to scale  | Becomes bottleneck at high scale |
+
+---
+
+## ✅ So What Does Instagram Do?
+
+They **detect high-follower users** and **avoid pushing their posts** into feeds.
+
+Instead:
+
+* Store their posts in the **main post database**
+* When a follower opens the app, their **FeedService pulls** posts from:
+
+  * Their own feed (for normal users' posts)
+  * The post DB (for high-follower users like celebrities)
+* This creates a **hybrid model**:
+
+  * **Push** for regular users
+  * **Pull** for viral / celebrity accounts
+
+This balances:
+
+* **Read efficiency** for most users
+* **Write scalability** for high-follower users
+
+---
+
+## 🎯 Summary You Can Remember
+
+> "Push when small, pull when big."
+
+* Push → better latency, more infra cost
+* Pull → cheaper to write, more load on read
+* Hybrid → best of both
+
+---
+
+Want to walk through how you'd implement this in a real system with Kafka, Redis, and maybe even a lightweight ML ranker?

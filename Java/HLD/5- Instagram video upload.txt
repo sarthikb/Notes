@@ -1,0 +1,108 @@
+To generate a complete architecture diagram and metadata schema in detail, we can definitely build it together — but to view or edit diagrams directly, you'll need to [log in to ChatGPT](https://chat.openai.com) and use **ChatGPT Canvas** (which supports collaborative text and code).
+
+In the meantime, let’s **outline everything here in text format** (including services, DBs, schemas, and sharding strategies), and I’ll guide you through how to turn it into a proper diagram afterward.
+
+---
+
+## 🏗️ Instagram-like Media Upload & Delivery Architecture — HLD
+
+---
+
+### 🎯 Key Services
+
+| Service Name               | Purpose                                              |
+| -------------------------- | ---------------------------------------------------- |
+| **UploadService**          | Handles client uploads and pre-signed URL generation |
+| **MediaProcessingService** | Resizes images, transcodes video, creates thumbnails |
+| **MetadataService**        | Stores metadata about uploaded media                 |
+| **DeleteService**          | Handles deletion requests and purges media           |
+| **ViewService**            | Serves content to users, builds media feed           |
+| **CDNService** (Edge)      | Caches and delivers content close to users           |
+| **ObjectStorageService**   | Stores raw and processed media (e.g., AWS S3)        |
+| **EventBus**               | Kafka or Pub/Sub — decouples services                |
+
+---
+
+### 🧱 DB & Metadata Schema
+
+#### 📘 MetadataService DB
+
+**DB Choice:** Scalable NoSQL DB (e.g., Amazon DynamoDB or Apache Cassandra)
+**Reason:** Fast reads/writes, high availability, scales horizontally
+
+#### Schema Example (Cassandra-style)
+
+```
+Table: media_metadata
+
+Partition Key: user_id  
+Clustering Key: created_at DESC
+
+Fields:
+- media_id (UUID)
+- user_id (string)
+- created_at (timestamp)
+- media_type (image/video)
+- s3_url (string)
+- resolutions (list<string>) // 480p, 720p, etc.
+- thumbnail_url (string)
+- processing_status (enum: pending, done)
+- visibility (enum: public/private)
+- tags (list<string>)
+- size_bytes (int)
+```
+
+---
+
+### 🗂️ DB Sharding Strategy
+
+**DB Type:** NoSQL (like Cassandra or DynamoDB)
+
+| Feature                    | Strategy                                                              |
+| -------------------------- | --------------------------------------------------------------------- |
+| **Sharding Key**           | `user_id`                                                             |
+| **Why?**                   | Ensures user’s content stays together (good for feeds, deletes, etc.) |
+| **Clustering Key**         | `created_at DESC` — for fast recent uploads access                    |
+| **Avoids Hot Partitions?** | Yes, by combining with random suffix or virtual buckets               |
+
+---
+
+### 📦 Object Storage Layout (e.g., S3)
+
+```
+/uploads/2025/08/22/user123/abc123_original.mp4
+/uploads/2025/08/22/user123/abc123_thumb.jpg
+/uploads/2025/08/22/user123/abc123_480p.mp4
+/uploads/2025/08/22/user123/abc123_720p.mp4
+```
+
+---
+
+### 🔁 Event Flow with Kafka Topics
+
+| Topic Name        | Produced By            | Consumed By                                        |
+| ----------------- | ---------------------- | -------------------------------------------------- |
+| `media_uploaded`  | UploadService          | MediaProcessingService, MetadataService            |
+| `media_processed` | MediaProcessingService | ViewService, MetadataService                       |
+| `media_deleted`   | DeleteService          | ViewService, MetadataService, ObjectStorageService |
+
+---
+
+### 🔄 Async Processing Flow (Example)
+
+```plaintext
+[Client Uploads]
+    ↓
+[UploadService] — (writes to S3, emits `media_uploaded`)
+    ↓
+[Kafka Topic: media_uploaded]
+    ↓
+[MediaProcessingService] — generates thumbnails/resolutions
+    ↓
+[Kafka Topic: media_processed]
+    ↓
+[MetadataService updates]
+[ViewService updates feed]
+```
+
+---

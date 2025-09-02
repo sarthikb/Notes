@@ -1,0 +1,110 @@
+In Spring Boot, **database connection pooling** is configured easily—often automatically—by Spring Boot's auto-configuration, but you can fine-tune it through properties.
+
+Here’s a complete guide 👇
+
+---
+
+## ✅ What is Connection Pooling?
+
+Connection pooling is a mechanism to **reuse database connections** instead of opening a new one for every request. This improves performance and reduces the load on the database.
+
+---
+
+## 🔧 Spring Boot Default Connection Pool
+
+Spring Boot uses **HikariCP** as the **default connection pool** since version 2.0.
+
+* It's lightweight, fast, and robust.
+* Auto-configured if `spring-boot-starter-jdbc` or `spring-boot-starter-data-jpa` is on the classpath.
+
+---
+
+## 🛠️ How to Configure Connection Pool in Spring Boot
+
+You configure it in `application.properties` or `application.yml`.
+
+---
+
+### 🔹 Example – `application.properties`
+
+```properties
+# === Datasource Config ===
+spring.datasource.url=jdbc:mysql://localhost:3306/mydb
+spring.datasource.username=root
+spring.datasource.password=secret
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+
+# === HikariCP Settings ===
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.max-lifetime=1800000
+spring.datasource.hikari.connection-timeout=20000
+spring.datasource.hikari.pool-name=MyHikariPool
+```
+
+---
+
+### 🔹 Example – `application.yml`
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/mydb
+    username: root
+    password: secret
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 20000
+      pool-name: MyHikariPool
+```
+
+---
+
+## 🧠 Key HikariCP Properties
+
+| Property             | Description                                     |
+| -------------------- | ----------------------------------------------- |
+| `maximum-pool-size`  | Max number of connections in the pool           |
+| `minimum-idle`       | Min number of idle connections to keep          |
+| `idle-timeout`       | How long idle connections stay in the pool (ms) |
+| `max-lifetime`       | Max lifetime of a connection (ms)               |
+| `connection-timeout` | Max time to wait for a connection (ms)          |
+| `pool-name`          | Custom name for the pool (for monitoring)       |
+
+---
+
+## 🔄 Using Other Connection Pools
+
+Spring Boot can also support:
+
+* **Apache Commons DBCP2**
+* **Tomcat JDBC**
+* **HikariCP** (default)
+
+To switch:
+
+```properties
+spring.datasource.type=org.apache.commons.dbcp2.BasicDataSource
+```
+
+But this is **not recommended unless you have a specific reason**, because HikariCP is the most efficient and fully supported.
+
+---
+
+## ✅ Summary
+
+| Task               | How Spring Boot Helps                                           |
+| ------------------ | --------------------------------------------------------------- |
+| Default Pool       | Uses **HikariCP** out of the box                                |
+| Configuration File | Set properties in `application.properties` or `application.yml` |
+| Pool Tuning        | Use `spring.datasource.hikari.*` props                          |
+| Alternative Pools  | You can switch via `spring.datasource.type`                     |
+
+---
+
+Let me know if you want a complete example using MySQL/PostgreSQL or how to monitor HikariCP performance in production!

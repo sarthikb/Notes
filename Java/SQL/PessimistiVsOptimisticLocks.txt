@@ -1,0 +1,167 @@
+Great question! Let’s break down **optimistic vs. pessimistic locking** in JPA/Hibernate, and how you can implement each.
+
+---
+
+## 🔐 What Is Locking?
+
+Locking is used to **prevent data conflicts** when multiple transactions try to **read/write the same entity**.
+
+---
+
+## ✅ Optimistic Locking
+
+### 📘 Concept:
+
+* Assumes **conflicts are rare**.
+* **No locks are held** in the database.
+* At **commit time**, the system checks if another transaction modified the data.
+* If there's a conflict → an **exception is thrown**.
+
+---
+
+### 🔧 How to Implement in JPA
+
+#### 1. Add a `@Version` field to your entity:
+
+```java
+@Entity
+public class Product {
+    @Id
+    private Long id;
+
+    private String name;
+
+    @Version
+    private int version; // Automatically managed by JPA
+}
+```
+
+* The `@Version` column is used to detect concurrent modifications.
+* It's incremented **automatically** every time the entity is updated.
+
+#### 2. Use normal JPA updates:
+
+```java
+@Transactional
+public void updateProduct(Long id) {
+    Product product = entityManager.find(Product.class, id);
+    product.setName("Updated Name");
+}
+```
+
+Behind the scenes:
+
+```sql
+UPDATE product SET name = ?, version = version + 1 WHERE id = ? AND version = ?
+```
+
+If the `version` doesn’t match → **`OptimisticLockException`** is thrown.
+
+---
+
+### ✅ When to Use Optimistic Locking:
+
+* High-concurrency, low-conflict systems
+* Web applications with short-lived transactions
+* When you want **better performance** over strict consistency
+
+---
+
+## 🚫 Pessimistic Locking
+
+### 📘 Concept:
+
+* Assumes **conflicts are likely**.
+* **Locks the database row** immediately when it's read.
+* Other transactions are **blocked** until the lock is released (or times out).
+
+---
+
+### 🔧 How to Implement in JPA
+
+Use **lock modes** when retrieving entities:
+
+```java
+Product product = entityManager.find(Product.class, 1L, LockModeType.PESSIMISTIC_WRITE);
+```
+
+Or in JPQL:
+
+```java
+TypedQuery<Product> query = entityManager.createQuery(
+    "SELECT p FROM Product p WHERE p.id = :id", Product.class);
+query.setLockMode(LockModeType.PESSIMISTIC_WRITE);
+query.setParameter("id", 1L);
+Product product = query.getSingleResult();
+```
+
+#### Supported Lock Modes:
+
+| Lock Mode                     | Description                       |
+| ----------------------------- | --------------------------------- |
+| `PESSIMISTIC_READ`            | Shared lock (read only)           |
+| `PESSIMISTIC_WRITE`           | Exclusive lock (no other updates) |
+| `PESSIMISTIC_FORCE_INCREMENT` | Like write + increments version   |
+
+> These lock modes translate into SQL-level `SELECT ... FOR UPDATE`.
+
+---
+
+### ✅ When to Use Pessimistic Locking:
+
+* High-conflict scenarios (e.g., inventory or financial systems)
+* When it's **critical to avoid lost updates**
+* Long transactions or batch processing
+
+---
+
+## ❗ Key Differences
+
+| Feature            | Optimistic Locking            | Pessimistic Locking               |
+| ------------------ | ----------------------------- | --------------------------------- |
+| Lock type          | Version-based                 | Database-level locks              |
+| DB lock held       | ❌ No                          | ✅ Yes (row is locked)             |
+| Conflict detection | At commit (via version check) | At read time (others are blocked) |
+| Performance        | ✅ Faster                      | ❌ Slower (more DB contention)     |
+| Risk               | May fail late                 | May block or deadlock             |
+
+---
+
+## 🧪 Example Scenario
+
+Imagine a banking app:
+
+### Optimistic:
+
+```java
+@Version
+private int version;
+
+account.setBalance(account.getBalance() - 100);
+```
+
+If two users try to update at the same time, one will fail due to version mismatch.
+
+### Pessimistic:
+
+```java
+Account acc = em.find(Account.class, id, LockModeType.PESSIMISTIC_WRITE);
+acc.setBalance(acc.getBalance() - 100);
+```
+
+Other transactions must wait or fail.
+
+---
+
+## ✅ Summary
+
+| Use Case                               | Recommended Locking |
+| -------------------------------------- | ------------------- |
+| Low-conflict, high-throughput systems  | Optimistic          |
+| Critical updates (financial/inventory) | Pessimistic         |
+| Read-heavy, write-rare                 | Optimistic          |
+| Long-running transactions              | Pessimistic         |
+
+---
+
+Let me know if you'd like to see a full Spring Boot example with both implementations!

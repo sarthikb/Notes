@@ -1,0 +1,93 @@
+Ah — got it. You're asking **not just what happens**, but **who actually does it** and **how it works internally** between services, the CDN, and object storage.
+
+Let’s break it down **realistically**, focusing on:
+
+1. **Who invalidates the CDN cache?**
+2. **How CDN pulls data from object storage?**
+3. **Who initiates or controls this in practice?**
+
+---
+
+## 🔁 **1. Who Invalidates the CDN Cache?**
+
+### ✅ In real life: **Your application services do it**, not the CDN itself.
+
+Let’s say the user deletes a video:
+
+| Step | Actor                                                | Action                                                                                                          |
+| ---- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 1    | `DeleteService`                                      | Deletes metadata, emits `media_deleted` event                                                                   |
+| 2    | `CDNInvalidationWorker` (or part of `DeleteService`) | Listens to the event and sends an API call to the CDN (e.g., Cloudflare, AWS CloudFront) to purge the video URL |
+
+The CDN doesn’t know the file is deleted — **your system must tell it**.
+
+> You use the CDN’s API to do this. It’s a standard part of CDN integration.
+
+---
+
+## 🧲 **2. How Does CDN Pull Data from Object Storage?**
+
+This is called a **cache miss → fetch from origin**.
+
+### 🔁 Flow:
+
+1. **User requests** `https://cdn.example.com/media/abc123.mp4`
+2. **CDN checks its edge cache:**
+
+   * If present → serve it
+   * If not present → **cache miss**
+3. CDN sends a request to your **origin server** (usually:
+
+   * **S3 bucket** (e.g., `media.example.com`)
+   * or a **media backend service** that streams files)
+4. Object storage (like S3) returns the file
+5. **CDN caches it** locally for future use
+
+So:
+
+> The **CDN itself pulls from object storage**, but only **on demand** during cache miss.
+
+---
+
+## 🔌 CDN Origin Configuration — Real-World Example
+
+When you set up a CDN (e.g., CloudFront), you define:
+
+| Setting                  | Description                                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| **Origin domain**        | Where to fetch content if not in cache (e.g., `media.example.com` → maps to S3 or service) |
+| **Cache key policy**     | What defines a unique cache entry (e.g., path + query string + headers)                    |
+| **Cache behavior rules** | TTLs, compression, request forwarding, etc.                                                |
+
+---
+
+### 📦 With AWS CloudFront + S3
+
+* You configure **S3 as the origin** in CloudFront
+* CloudFront fetches from S3 when there’s a cache miss
+* You can set TTLs or force invalidation via CloudFront API
+* You don’t need to run a separate service to serve files
+
+---
+
+## 🧠 So In Summary:
+
+| Question                                  | Answer                                                                                        |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Who pulls from object storage?**        | **CDN does**, during cache miss                                                               |
+| **Who tells CDN to invalidate cache?**    | **Your app**, via API call (usually from a background worker or service like `DeleteService`) |
+| **When does CDN talk to object storage?** | Only on **cache miss**, then it stores a copy                                                 |
+
+---
+
+## 👷 Real Life Systems Setup
+
+| Component          | Tool                                | Notes                                                    |
+| ------------------ | ----------------------------------- | -------------------------------------------------------- |
+| CDN                | CloudFront, Cloudflare, Fastly      | Caches media, pulls from origin (S3 or API)              |
+| Object Storage     | S3, GCS, MinIO                      | Stores raw and processed videos                          |
+| Invalidation Logic | Custom service or background worker | Listens to Kafka events and sends purge API calls to CDN |
+
+---
+
+Would you like to **mock up an example config** (like how to configure CloudFront with S3 + TTL + invalidation)? Or build the flow as a diagram in Canvas?

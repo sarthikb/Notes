@@ -1,0 +1,114 @@
+**Dirty checking** is a powerful feature in **Hibernate** that allows the framework to **automatically detect changes** to persistent entities and update the database **without explicit `update()` calls**.
+
+---
+
+## 🔍 What Is Dirty Checking?
+
+**Dirty checking** means Hibernate checks whether an entity’s **in-memory state** (Java object) has changed compared to the state it was in when it was loaded from the database.
+
+If changes are detected at the time of **flush** or **transaction commit**, Hibernate automatically generates and executes the appropriate **SQL `UPDATE` statements**.
+
+---
+
+## 🧠 How It Works
+
+1. You load an entity using `EntityManager` or `Session`.
+2. Hibernate keeps a **snapshot** of the original state of the entity.
+3. You make changes to the object via setters.
+4. When the transaction is committed or the persistence context is flushed:
+
+   * Hibernate compares the current state with the original snapshot.
+   * If differences are found → Hibernate marks the entity as **dirty**.
+   * It issues an `UPDATE` query for the changed fields.
+
+---
+
+## 🧪 Example
+
+```java
+@Transactional
+public void updateUserName(Long id) {
+    User user = entityManager.find(User.class, id); // Step 1
+    user.setName("Updated Name");                   // Step 3
+    // No need to call entityManager.merge() or update()
+    // Hibernate will auto-detect the change and update the DB
+}
+```
+
+When the transaction commits, Hibernate will automatically issue:
+
+```sql
+UPDATE users SET name = 'Updated Name' WHERE id = ?;
+```
+
+---
+
+## 🛠 Behind the Scenes
+
+* Hibernate uses a **dirty checking mechanism** on flush/commit.
+* Internally, it compares the entity's fields with the **original values** stored in its **persistence context**.
+* If any property changed → Hibernate issues an update.
+* If nothing changed → **No SQL is generated**.
+
+---
+
+## 🧹 When Does Dirty Checking Happen?
+
+* On `flush()`
+* On `commit()`
+* Sometimes manually with `entityManager.flush()`
+
+---
+
+## ✅ Benefits of Dirty Checking
+
+| Benefit                   | Why It Matters                         |
+| ------------------------- | -------------------------------------- |
+| Reduces boilerplate code  | No need to call `update()` manually    |
+| Automatic change tracking | Hibernate manages lifecycle internally |
+| Optimized DB usage        | Only updates modified fields           |
+
+---
+
+## ⚠️ Limitations & Caveats
+
+| Issue                                   | Explanation                               |
+| --------------------------------------- | ----------------------------------------- |
+| Only works for **managed** entities     | Detached objects are not tracked          |
+| **Custom setters/getters** can break it | If they bypass internal state             |
+| Complex structures (e.g., collections)  | May need explicit handling or annotations |
+
+---
+
+## 🧪 Example of a Missed Dirty Check
+
+```java
+User user = new User();
+user.setId(1L);
+user.setName("Changed");
+entityManager.merge(user);  // This works because `user` is detached
+
+// BUT if you don't use merge and `user` is not managed, nothing happens
+```
+
+---
+
+## 🔐 Optional: Disabling Dirty Checking (Not Recommended)
+
+Hibernate allows disabling automatic dirty checking, but it’s **not commonly used**, and generally not advisable unless you have very advanced needs.
+
+---
+
+## ✅ Summary
+
+| Feature               | Dirty Checking                              |
+| --------------------- | ------------------------------------------- |
+| Purpose               | Automatically detect entity changes         |
+| Triggers              | On flush or commit                          |
+| Needs managed entity? | ✅ Yes                                       |
+| Manual update needed? | ❌ No                                        |
+| Performance impact    | Minimal; Hibernate optimizes update queries |
+
+---
+
+Let me know if you want to **see the SQL logs** Hibernate generates during dirty checking or how it compares to manual updates!

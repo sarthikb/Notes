@@ -1,0 +1,105 @@
+**Sealed classes** (introduced in Java 15 as a preview and stable in Java 17) offer several key advantages over **abstract classes** and **interfaces**, especially when it comes to **controlling inheritance** and enabling **exhaustive pattern matching**.
+
+---
+
+## ✅ Advantages of Sealed Classes Over Abstract Classes and Interfaces
+
+### 1. **Controlled Inheritance (Explicit Subclassing)**
+
+* **Sealed classes** let you **explicitly declare** which classes are allowed to extend or implement them.
+* This gives you **stronger encapsulation** and **intentional design**.
+
+```java
+public sealed class Shape permits Circle, Rectangle, Triangle {}
+```
+
+🔒 **Why it's better:**
+With `abstract class` or `interface`, **any class** can extend or implement them unless made package-private or final. Sealed classes prevent unintended extensions.
+
+---
+
+### 2. **Support for Exhaustive Pattern Matching**
+
+* In combination with **pattern matching** (e.g., in `switch`), sealed classes allow the compiler to **verify that all subtypes are covered**.
+
+```java
+switch (shape) {
+    case Circle c -> ...
+    case Rectangle r -> ...
+    case Triangle t -> ...
+}
+```
+
+✅ **Why it's better:**
+With a sealed hierarchy, the compiler **knows all possible subtypes**, enabling **exhaustiveness checking** at compile time. This isn’t possible with interfaces or abstract classes alone.
+
+---
+
+### 3. **Better Modeling of Closed Domains**
+
+* Sealed classes are great for modeling **domain types** where the set of subtypes is **fixed and known** — like algebraic data types in functional programming.
+
+Example:
+
+```java
+public sealed interface Result permits Success, Error {}
+
+public final class Success implements Result {}
+public final class Error implements Result {}
+```
+
+🧠 **Why it's better:**
+This gives you **the safety of enums**, but with the **flexibility of classes/interfaces**, including fields, methods, and polymorphism.
+
+---
+
+### 4. **Improved Readability and Maintainability**
+
+* Developers can easily **see all permitted subclasses** in one place — the sealed class itself.
+
+📖 **Why it's better:**
+In large codebases, it's easier to track and reason about type hierarchies when they’re tightly controlled.
+
+---
+
+### 5. **Security and API Integrity**
+
+* Useful in **public APIs** where you want to expose a base type but limit who can extend it.
+
+🚫 No one outside the module/package can create unintended subtypes — unless explicitly permitted.
+
+---
+
+## 🚫 What Abstract Classes and Interfaces Lack (Compared to Sealed)
+
+| Feature                                   | Abstract Class | Interface                      | Sealed Class            |
+| ----------------------------------------- | -------------- | ------------------------------ | ----------------------- |
+| Can define methods/fields                 | ✅              | ✅ (default methods, no fields) | ✅                       |
+| Can be extended by any class              | ✅              | ✅                              | ❌ (only permitted ones) |
+| Controls subclassing                      | ❌              | ❌                              | ✅                       |
+| Exhaustive `switch` support               | ❌              | ❌                              | ✅                       |
+| Modeling algebraic types                  | ❌              | ⚠️                             | ✅                       |
+| Compile-time safety for hierarchy changes | ❌              | ❌                              | ✅                       |
+
+---
+
+## 🧩 When to Use What?
+
+| Use Case                                                         | Best Choice        |
+| ---------------------------------------------------------------- | ------------------ |
+| You need to define behavior with optional default implementation | **Abstract class** |
+| You want to define a contract without implementation             | **Interface**      |
+| You want to model a closed set of possible types                 | **Sealed class**   |
+| You want safe and exhaustive pattern matching                    | **Sealed class**   |
+
+---
+
+## 🧪 TL;DR
+
+* **Sealed classes** = **Controlled inheritance + Exhaustive matching**
+* **Abstract classes** = **Partial implementations, but open-ended hierarchy**
+* **Interfaces** = **Contracts, but anyone can implement**
+
+---
+
+Let me know if you want to see how sealed classes work with records, or how to use them with pattern matching in real code examples.

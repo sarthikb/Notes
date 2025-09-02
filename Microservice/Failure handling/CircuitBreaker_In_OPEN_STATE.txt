@@ -1,0 +1,95 @@
+Excellent set of questions — you're digging into the **real behavior** of Circuit Breakers (especially in **Resilience4j** or similar libs). Let's break it down.
+
+---
+
+## 🔌 What Happens After Circuit Breaker Is **Open**?
+
+When a **circuit breaker** enters the **OPEN** state (due to repeated failures), it:
+
+* **Immediately fails all requests** (throws an exception or returns fallback).
+* Stays open for a **configured time period** (e.g., 30 seconds, called `waitDurationInOpenState`).
+* Then transitions to the **HALF-OPEN** state.
+
+---
+
+## 🔄 **HALF-OPEN State** Behavior
+
+In **HALF-OPEN**:
+
+* A **limited number of test calls** are allowed through (controlled by `permittedNumberOfCallsInHalfOpenState`).
+* If **those test calls succeed**, it goes back to **CLOSED**.
+* If **they fail**, it goes back to **OPEN**, and the cycle repeats.
+
+This allows the system to *test if the backend has recovered*.
+
+---
+
+## 📊 Does It Recheck Sliding Window Post OPEN?
+
+Not immediately. The **sliding window** (e.g. last 10 calls) is active only when the breaker is in the **CLOSED** state.
+
+* Once **OPEN**, it uses a **time-based break** (fixed `waitDurationInOpenState`).
+* After the wait, **HALF-OPEN** is a fresh test — not based on the previous sliding window.
+
+---
+
+## 🧵 Are Requests Queued While Circuit Is OPEN?
+
+❌ **No. Requests are *not queued*.**
+
+If a circuit breaker is in **OPEN**, **calls are immediately rejected**. They will either:
+
+1. **Throw an exception** (e.g. `CallNotPermittedException`)
+2. Call a defined **fallback method** (if annotated and configured)
+
+---
+
+## 🤔 What If I Annotate a Method/Class and Circuit Is OPEN?
+
+* If a request hits a method with `@CircuitBreaker`, and the circuit is **OPEN**:
+
+  * 🚫 The call is **blocked instantly**.
+  * ✅ If a `fallbackMethod` is defined, **that is invoked** instead.
+  * ❌ If no fallback is defined, a **`CallNotPermittedException`** is thrown.
+
+---
+
+## 🔁 Behavior Summary Table
+
+| State         | Behavior                                                              |
+| ------------- | --------------------------------------------------------------------- |
+| CLOSED        | All calls go through. Errors are tracked via **sliding window**.      |
+| OPEN          | All calls are **rejected immediately**. No sliding window check.      |
+| HALF-OPEN     | **Limited test calls** allowed through. Result determines next state. |
+| No Fallback   | Uncaught exception (e.g., `CallNotPermittedException`).               |
+| With Fallback | Calls fallback method instead of propagating exception.               |
+
+---
+
+## ✅ Example With Fallback (Java + Resilience4j)
+
+```java
+@CircuitBreaker(name = "myCB", fallbackMethod = "fallback")
+public String callService() {
+    return externalCall();
+}
+
+public String fallback(Throwable t) {
+    return "Service temporarily unavailable";
+}
+```
+
+### If Circuit is OPEN:
+
+* `fallback()` is called.
+* If `fallback` is missing → you get `CallNotPermittedException`.
+
+---
+
+## 🧠 Tips
+
+* **Always provide a fallback** when using Circuit Breakers in production.
+* **Don’t retry** inside the fallback — it defeats the purpose.
+* Use `metrics` (from Resilience4j or Micrometer) to track the state transitions.
+
+---

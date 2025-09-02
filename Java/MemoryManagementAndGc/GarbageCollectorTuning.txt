@@ -1,0 +1,146 @@
+Great question — understanding how the **JVM selects and uses Garbage Collectors (GC)** is essential for building **high-performance, low-latency systems**, like high-throughput servers or payment gateways.
+
+---
+
+## ✅ **How Does the JVM Decide Which Garbage Collector to Use?**
+
+### 📌 **Default GC Selection Depends on:**
+
+* **JVM version**
+* **Java heap size**
+* **JVM vendor (OpenJDK, Oracle, etc.)**
+* **Explicit GC options in command line**
+
+### 🔄 **Default GC in Modern JVMs:**
+
+| Java Version | Default GC                                                                |
+| ------------ | ------------------------------------------------------------------------- |
+| Java 8       | Parallel GC (`-XX:+UseParallelGC`)                                        |
+| Java 9–13    | G1 GC (`-XX:+UseG1GC`)                                                    |
+| Java 14+     | G1 GC (still default)                                                     |
+| Java 21+     | G1 GC (but **ZGC** and **Shenandoah** are production-ready and available) |
+
+> 🔧 **Note**: You can always **override the default** using JVM flags (see below).
+
+---
+
+## 🚀 **Available Garbage Collectors in JVM**
+
+| GC Name                         | JVM Flag               | Best For                            | Notes                                          |
+| ------------------------------- | ---------------------- | ----------------------------------- | ---------------------------------------------- |
+| **Serial GC**                   | `-XX:+UseSerialGC`     | Low-memory, single-threaded apps    | Simple but slow                                |
+| **Parallel GC (Throughput GC)** | `-XX:+UseParallelGC`   | High-throughput batch jobs          | Multiple GC threads, pause-the-world           |
+| **G1 GC (Garbage-First)**       | `-XX:+UseG1GC`         | Balanced performance and pause time | Default in Java 9+                             |
+| **ZGC (Z Garbage Collector)**   | `-XX:+UseZGC`          | Ultra-low pause times               | Available in Java 15+                          |
+| **Shenandoah**                  | `-XX:+UseShenandoahGC` | Low-latency, low-pause              | Available in some OpenJDK builds (like RedHat) |
+| **Epsilon (No-Op GC)**          | `-XX:+UseEpsilonGC`    | Benchmarking only                   | Doesn’t collect memory!                        |
+
+---
+
+## 🎯 **Tuning GC for High-Throughput Systems**
+
+If you're optimizing for **throughput** (i.e., maximizing the amount of work done over time), here’s what you should consider:
+
+---
+
+### ✅ 1. **Choose the Right GC:**
+
+For high throughput, consider:
+
+* **Parallel GC** (`-XX:+UseParallelGC`)
+* **G1 GC** (default — often good enough)
+* Avoid low-pause collectors unless latency is a key concern.
+
+---
+
+### ✅ 2. **Set Heap Size Appropriately**
+
+* Avoid frequent GC cycles by giving the JVM enough memory.
+
+```bash
+-Xms4g -Xmx4g  # Set min and max heap sizes to same value
+```
+
+---
+
+### ✅ 3. **Tune GC Threads**
+
+```bash
+-XX:ParallelGCThreads=8
+-XX:ConcGCThreads=4
+```
+
+---
+
+### ✅ 4. **Use GC Logging to Analyze Behavior**
+
+Enable GC logs to tune based on actual performance:
+
+```bash
+-Xlog:gc*:file=gc.log:time,uptime,level,tags
+```
+
+Then use tools like:
+
+* [GCViewer](https://github.com/chewiebug/GCViewer)
+* `jstat`
+* Java Flight Recorder (JFR)
+
+---
+
+### ✅ 5. **G1 GC Tuning Options** (if using G1)
+
+```bash
+-XX:MaxGCPauseMillis=200
+-XX:InitiatingHeapOccupancyPercent=45
+```
+
+* Tells G1 to try to keep GC pauses below 200 ms.
+* Adjusts how early concurrent GC kicks in.
+
+---
+
+### ✅ 6. **ZGC or Shenandoah for Ultra-Low Latency**
+
+If your system requires **<10ms pause times**, try:
+
+```bash
+-XX:+UseZGC
+```
+
+Or (RedHat OpenJDK):
+
+```bash
+-XX:+UseShenandoahGC
+```
+
+---
+
+## 🛠️ **GC Tuning Example for High Throughput**
+
+```bash
+java \
+  -Xms8g -Xmx8g \
+  -XX:+UseParallelGC \
+  -XX:ParallelGCThreads=8 \
+  -XX:+AlwaysPreTouch \
+  -XX:+UseCompressedOops \
+  -Xlog:gc*:gc.log
+  -jar my-high-throughput-app.jar
+```
+
+---
+
+## 🧾 Summary
+
+| Aspect             | Recommendation                        |
+| ------------------ | ------------------------------------- |
+| GC Choice          | Parallel GC or G1 GC for throughput   |
+| Heap Size          | Set large enough to avoid frequent GC |
+| Logging            | Enable GC logs for analysis           |
+| Latency-Sensitive? | Use ZGC or Shenandoah                 |
+| Tuning Needed?     | Yes — GC is **not one-size-fits-all** |
+
+---
+
+Let me know your target workload (e.g., REST API, batch job, messaging system), and I can suggest a GC tuning profile tailored to it.

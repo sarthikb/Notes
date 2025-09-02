@@ -1,0 +1,74 @@
+That’s a **super important** and nuanced question — and you're right to ask it from both a **theoretical** and **practical** angle. Let’s unpack it carefully.
+
+---
+
+## ✅ Can RDBMS Be Horizontally Scaled with Sharding?
+
+### ✔️ *Yes, theoretically and practically — BUT…*
+
+It’s **much harder** to do well compared to NoSQL systems, because:
+
+1. RDBMS were designed for **strong consistency, ACID, and relational joins**
+2. Most don't **natively support sharding** — you have to layer it on yourself (or use external tools)
+
+---
+
+## 🧱 Real-World Tools That Enable Sharding for RDBMS
+
+| Tool            | DB                               | What it does                                     |
+| --------------- | -------------------------------- | ------------------------------------------------ |
+| **Vitess**      | MySQL                            | Transparent sharding + connection pooling        |
+| **Citus**       | PostgreSQL                       | Native horizontal partitioning + distributed SQL |
+| **CockroachDB** | Custom-built Postgres-compatible | CP system with native sharding                   |
+| **YugabyteDB**  | Postgres API, distributed core   | Globally distributed with strong consistency     |
+
+These let you scale **reads + writes** across multiple nodes.
+
+> So yes — **horizontal scaling of RDBMS is achievable in practice**, but it comes with tradeoffs and usually requires:
+>
+> * Tooling
+> * Careful schema design
+> * App-level awareness (for some setups)
+
+---
+
+## 🟡 So Why Do Most People Default to **Read Replicas**?
+
+Because they are:
+
+* ✅ Simple to set up
+* ✅ Compatible with existing RDBMS
+* ✅ Safe for **read-heavy workloads**
+* ❌ But don't help with write scale
+
+---
+
+## 🔁 Summary of Tradeoffs
+
+| Approach                      | Pros                                           | Cons                                                |
+| ----------------------------- | ---------------------------------------------- | --------------------------------------------------- |
+| **Read Replicas**             | Easy to implement, good for read-heavy systems | Doesn’t help with write scale, risk of stale reads  |
+| **Sharding**                  | Scales reads + writes, can handle massive load | Harder to implement, complex queries, joins limited |
+| **Tools like Vitess / Citus** | Abstract sharding, offer SQL interface         | Still non-trivial setup + infra costs               |
+
+---
+
+### ✅ Your Mental Model (Interview Gold):
+
+> For small-to-medium scale: RDBMS + read replicas
+> For very high write scale: consider sharding (via tools like Vitess or Citus), or switch to a distributed DB that supports SQL semantics (CockroachDB, Yugabyte)
+
+---
+
+### 🔁 One Last Check:
+
+Let’s say you’re building a social media app. Your **user service** uses Postgres.
+You’re starting to hit **write limits** on the user table (lots of profile updates, etc).
+
+Would you:
+
+* Start with read replicas?
+* Move to sharding?
+* Migrate to a distributed SQL DB?
+
+Walk me through how you’d evaluate these options.

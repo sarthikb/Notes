@@ -1,0 +1,85 @@
+Awesome — let’s dive in.
+
+---
+
+## 🔁 3. Replication + Sharding: Working Together
+
+In real-world systems, **sharding alone isn’t enough** — it helps scale, but doesn’t protect against failures. That’s where **replication** comes in.
+
+---
+
+## 🧱 System Layout: Shards + Replicas
+
+Every **shard** is typically a **replica set**, not just a single DB instance.
+
+### For example:
+
+If you have 4 shards:
+
+```
+Shard 1: [Primary, Secondary, Secondary]
+Shard 2: [Primary, Secondary, Secondary]
+Shard 3: [Primary, Secondary, Secondary]
+Shard 4: [Primary, Secondary, Secondary]
+```
+
+So you now have:
+
+* **Horizontal scaling** via sharding
+* **High availability + fault tolerance** via replication
+
+---
+
+## ✅ Benefits of Combining Both
+
+| Goal                   | Achieved by                           |
+| ---------------------- | ------------------------------------- |
+| **Scalability**        | Sharding (split data horizontally)    |
+| **Read Scaling**       | Replication (read from secondaries)   |
+| **Write Availability** | Replication (failover to secondaries) |
+| **Disaster Recovery**  | Replication + backups                 |
+
+---
+
+## 📌 Considerations When Combining
+
+### 1. **Replication happens per shard**
+
+* Replication is **local to each shard**
+* So failure of one replica group doesn’t affect the others
+
+### 2. **Rebalancing needs care**
+
+* When moving data between shards, you must ensure **replication is preserved** (e.g., migrate to a replica set, not a single node)
+
+### 3. **Reads from replicas need consistency control**
+
+* If you read from secondaries, you may get **eventually consistent data**
+* You can choose **read preferences** (like `readPreference: nearest` in MongoDB)
+
+---
+
+### 🔁 Example: MongoDB
+
+MongoDB combines sharding + replication *by default*:
+
+* Each shard is a replica set
+* Writes go to primaries
+* Reads can be balanced across secondaries if allowed
+
+---
+
+### ❓ Quick Check
+
+Imagine a write-heavy analytics platform with:
+
+* Large time-series data
+* Sharded by `device_id`
+* Users often read recent data, but **stale data is okay**
+
+Would you:
+
+* Read from secondaries?
+* Or enforce reads only from primaries? Why?
+
+Let’s see how you think through it.
