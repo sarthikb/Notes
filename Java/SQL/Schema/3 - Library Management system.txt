@@ -1,0 +1,371 @@
+Awesome — let’s design the **Library Management System** schema, table-by-table, including columns and SQL `CREATE TABLE` statements.
+
+We’ll keep it **clean, normalized, and scalable**.
+
+---
+
+## 🧱 Step-by-Step Schema Design
+
+### 1. **Books Table**
+
+| Column          | Type         | Description            |
+| --------------- | ------------ | ---------------------- |
+| book\_id        | INT (PK)     | Unique book identifier |
+| title           | VARCHAR(255) | Book title             |
+| genre           | VARCHAR(100) | Book genre             |
+| language        | VARCHAR(100) | Language of the book   |
+| published\_year | INT          | Year of publication    |
+
+```sql
+CREATE TABLE books (
+    book_id INT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    genre VARCHAR(100),
+    language VARCHAR(100),
+    published_year INT
+);
+```
+
+---
+
+### 2. **Authors Table**
+
+| Column     | Type         | Description             |
+| ---------- | ------------ | ----------------------- |
+| author\_id | INT (PK)     | Unique author ID        |
+| name       | VARCHAR(255) | Full name of the author |
+
+```sql
+CREATE TABLE authors (
+    author_id INT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+```
+
+---
+
+### 3. **Books\_Authors (Junction Table)**
+
+| Column      | Type                   | Description                |
+| ----------- | ---------------------- | -------------------------- |
+| book\_id    | INT                    | FK to `books(book_id)`     |
+| author\_id  | INT                    | FK to `authors(author_id)` |
+| PRIMARY KEY | (book\_id, author\_id) | Prevents duplicates        |
+
+```sql
+CREATE TABLE books_authors (
+    book_id INT,
+    author_id INT,
+    PRIMARY KEY (book_id, author_id),
+    FOREIGN KEY (book_id) REFERENCES books(book_id),
+    FOREIGN KEY (author_id) REFERENCES authors(author_id)
+);
+```
+
+---
+
+### 4. **Book Copies Table**
+
+| Column   | Type         | Description                         |
+| -------- | ------------ | ----------------------------------- |
+| copy\_id | INT (PK)     | Unique ID per physical copy         |
+| book\_id | INT          | FK to `books(book_id)`              |
+| status   | ENUM         | 'available', 'borrowed', 'reserved' |
+| location | VARCHAR(255) | (e.g. Shelf number)                 |
+
+```sql
+CREATE TABLE book_copies (
+    copy_id INT PRIMARY KEY,
+    book_id INT NOT NULL,
+    status ENUM('available', 'borrowed', 'reserved') DEFAULT 'available',
+    location VARCHAR(255),
+    FOREIGN KEY (book_id) REFERENCES books(book_id)
+);
+```
+
+---
+
+### 5. **Users Table**
+
+| Column   | Type         | Description            |
+| -------- | ------------ | ---------------------- |
+| user\_id | INT (PK)     | Unique library user ID |
+| name     | VARCHAR(255) | User’s name            |
+| email    | VARCHAR(255) | User’s email address   |
+
+```sql
+CREATE TABLE users (
+    user_id INT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL
+);
+```
+
+---
+
+### 6. **Loans Table**
+
+| Column       | Type     | Description                     |
+| ------------ | -------- | ------------------------------- |
+| loan\_id     | INT (PK) | Unique loan transaction ID      |
+| user\_id     | INT      | Who borrowed it                 |
+| copy\_id     | INT      | Which book copy                 |
+| borrow\_date | DATE     | Date it was borrowed            |
+| due\_date    | DATE     | When it’s due                   |
+| return\_date | DATE     | When it was returned (nullable) |
+
+```sql
+CREATE TABLE loans (
+    loan_id INT PRIMARY KEY,
+    user_id INT NOT NULL,
+    copy_id INT NOT NULL,
+    borrow_date DATE NOT NULL,
+    due_date DATE NOT NULL,
+    return_date DATE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (copy_id) REFERENCES book_copies(copy_id)
+);
+```
+
+---
+
+### 7. **Reservations Table**
+
+| Column            | Type     | Description                        |
+| ----------------- | -------- | ---------------------------------- |
+| reservation\_id   | INT (PK) | Unique reservation ID              |
+| user\_id          | INT      | User making the reservation        |
+| copy\_id          | INT      | Book copy reserved                 |
+| reservation\_date | DATE     | When the reservation was made      |
+| status            | ENUM     | 'active', 'cancelled', 'fulfilled' |
+
+```sql
+CREATE TABLE reservations (
+    reservation_id INT PRIMARY KEY,
+    user_id INT NOT NULL,
+    copy_id INT NOT NULL,
+    reservation_date DATE NOT NULL,
+    status ENUM('active', 'cancelled', 'fulfilled') DEFAULT 'active',
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (copy_id) REFERENCES book_copies(copy_id)
+);
+```
+
+---
+
+### ✅ Summary of Relationships
+
+* `books` ↔ `authors` → **many-to-many**
+* `books` → `book_copies` → **one-to-many**
+* `users` → `loans`, `reservations` → **one-to-many**
+* `book_copies` are referenced in **loans and reservations**
+
+---
+
+Excellent — now that your schema is solid, we can map it into a **Spring Boot** project using:
+
+* **JPA/Hibernate** for ORM
+* **Java classes** as `@Entity`s
+* Relationships using `@ManyToOne`, `@OneToMany`, `@ManyToMany`, etc.
+
+---
+
+### 🚧 Before We Start: What We'll Cover
+
+Let’s create the **Entity classes only** for now — the backbone of the structure.
+
+✅ Fully mapped:
+
+* `Book`
+* `Author`
+* `BooksAuthors` (many-to-many via join table)
+* `BookCopy`
+* `User`
+* `Loan`
+* `Reservation`
+
+We’ll skip service/repo/controller layers *for now* to stay focused.
+
+---
+
+## 🏗️ SPRING BOOT: ENTITY CLASSES
+
+### 1. 📘 `Book.java`
+
+```java
+@Entity
+@Table(name = "books")
+public class Book {
+    
+    @Id
+    private Integer bookId;
+
+    private String title;
+    private String genre;
+    private String language;
+    private Integer publishedYear;
+
+    @ManyToMany
+    @JoinTable(
+        name = "books_authors",
+        joinColumns = @JoinColumn(name = "book_id"),
+        inverseJoinColumns = @JoinColumn(name = "author_id")
+    )
+    private Set<Author> authors = new HashSet<>();
+}
+```
+
+---
+
+### 2. ✍️ `Author.java`
+
+```java
+@Entity
+@Table(name = "authors")
+public class Author {
+    
+    @Id
+    private Integer authorId;
+
+    private String name;
+
+    @ManyToMany(mappedBy = "authors")
+    private Set<Book> books = new HashSet<>();
+}
+```
+
+---
+
+### 3. 📚 `BookCopy.java`
+
+```java
+@Entity
+@Table(name = "book_copies")
+public class BookCopy {
+    
+    @Id
+    private Integer copyId;
+
+    @ManyToOne
+    @JoinColumn(name = "book_id", nullable = false)
+    private Book book;
+
+    @Enumerated(EnumType.STRING)
+    private Status status;
+
+    private String location;
+
+    public enum Status {
+        AVAILABLE,
+        BORROWED,
+        RESERVED
+    }
+}
+```
+
+---
+
+### 4. 👤 `User.java`
+
+```java
+@Entity
+@Table(name = "users")
+public class User {
+
+    @Id
+    private Integer userId;
+
+    private String name;
+
+    @Column(unique = true)
+    private String email;
+
+    @OneToMany(mappedBy = "user")
+    private List<Loan> loans;
+
+    @OneToMany(mappedBy = "user")
+    private List<Reservation> reservations;
+}
+```
+
+---
+
+### 5. 🔄 `Loan.java`
+
+```java
+@Entity
+@Table(name = "loans")
+public class Loan {
+    
+    @Id
+    private Integer loanId;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "copy_id")
+    private BookCopy bookCopy;
+
+    private LocalDate borrowDate;
+    private LocalDate dueDate;
+    private LocalDate returnDate;
+}
+```
+
+---
+
+### 6. 🗓️ `Reservation.java`
+
+```java
+@Entity
+@Table(name = "reservations")
+public class Reservation {
+    
+    @Id
+    private Integer reservationId;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @ManyToOne
+    @JoinColumn(name = "copy_id")
+    private BookCopy bookCopy;
+
+    private LocalDate reservationDate;
+
+    @Enumerated(EnumType.STRING)
+    private Status status;
+
+    public enum Status {
+        ACTIVE,
+        CANCELLED,
+        FULFILLED
+    }
+}
+```
+
+---
+
+### ✅ What’s Next?
+
+You now have:
+
+* A complete **Spring Boot entity model**
+* All **foreign key relationships**
+* `@ManyToMany`, `@OneToMany`, and `@Enumerated` mappings
+
+---
+
+### ➕ Options to Continue:
+
+Would you like to:
+
+1. Add **Spring Data Repositories** (`CrudRepository` or `JpaRepository`)?
+2. Set up sample **REST endpoints** for basic CRUD?
+3. Seed some **sample data**?
+
+You choose the next step — I’ll help guide it!
+	

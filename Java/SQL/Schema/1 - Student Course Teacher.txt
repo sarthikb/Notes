@@ -1,0 +1,343 @@
+Absolutely! Here’s a clear, concise summary of your database schema design — perfect for quick reference later.
+
+---
+
+# ?? Database Schema Design Notes
+
+---
+
+### 1. **Students Table**
+
+| Column        | Type         | Description               |
+| ------------- | ------------ | ------------------------- |
+| student\_id   | INT (PK)     | Unique student identifier |
+| student\_name | VARCHAR(255) | Student’s full name       |
+
+**SQL:**
+
+```sql
+CREATE TABLE students (
+    student_id INT PRIMARY KEY,
+    student_name VARCHAR(255) NOT NULL
+);
+```
+
+---
+
+### 2. **Courses Table**
+
+| Column       | Type         | Description              |
+| ------------ | ------------ | ------------------------ |
+| course\_id   | INT (PK)     | Unique course identifier |
+| course\_name | VARCHAR(255) | Name of the course       |
+
+**SQL:**
+
+```sql
+CREATE TABLE courses (
+    course_id INT PRIMARY KEY,
+    course_name VARCHAR(255) NOT NULL
+);
+```
+
+---
+
+### 3. **Teachers Table**
+
+| Column      | Type         | Description               |
+| ----------- | ------------ | ------------------------- |
+| teacher\_id | INT (PK)     | Unique teacher identifier |
+| name        | VARCHAR(255) | Teacher’s full name       |
+| department  | VARCHAR(255) | Department name           |
+
+**SQL:**
+
+```sql
+CREATE TABLE teachers (
+    teacher_id INT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    department VARCHAR(255) NOT NULL
+);
+```
+
+---
+
+### 4. **Enrollments Table**
+
+(*Junction table linking students and courses, many-to-many*)
+
+| Column      | Type                      | Description                         |
+| ----------- | ------------------------- | ----------------------------------- |
+| student\_id | INT                       | FK to `students(student_id)`        |
+| course\_id  | INT                       | FK to `courses(course_id)`          |
+| PRIMARY KEY | (student\_id, course\_id) | Composite key to prevent duplicates |
+
+**SQL:**
+
+```sql
+CREATE TABLE enrollments (
+    student_id INT,
+    course_id INT,
+    PRIMARY KEY (student_id, course_id),
+    FOREIGN KEY (student_id) REFERENCES students(student_id),
+    FOREIGN KEY (course_id) REFERENCES courses(course_id)
+);
+```
+
+---
+
+### 5. **Faculties\_Courses Table**
+
+(*Junction table linking teachers and courses, many-to-many*)
+
+| Column      | Type                      | Description                  |
+| ----------- | ------------------------- | ---------------------------- |
+| course\_id  | INT                       | FK to `courses(course_id)`   |
+| teacher\_id | INT                       | FK to `teachers(teacher_id)` |
+| PRIMARY KEY | (course\_id, teacher\_id) | Composite key                |
+
+**SQL:**
+
+```sql
+CREATE TABLE faculties_courses (
+    course_id INT,
+    teacher_id INT,
+    PRIMARY KEY (course_id, teacher_id),
+    FOREIGN KEY (course_id) REFERENCES courses(course_id),
+    FOREIGN KEY (teacher_id) REFERENCES teachers(teacher_id)
+);
+```
+
+
+
+Based on your SQL schema, here are the **Spring Boot JPA entity classes** for each table with proper annotations for relationships, composite keys, and mappings.
+
+---
+
+### ? `Student.java`
+
+```java
+import jakarta.persistence.*;
+import java.util.Set;
+
+@Entity
+@Table(name = "students")
+public class Student {
+
+    @Id
+    private Integer studentId;
+
+    private String studentName;
+
+    @ManyToMany
+    @JoinTable(
+        name = "enrollments",
+        joinColumns = @JoinColumn(name = "student_id"),
+        inverseJoinColumns = @JoinColumn(name = "course_id")
+    )
+    private Set<Course> courses;
+
+    // Getters and setters
+}
+```
+
+---
+
+### ? `Course.java`
+
+```java
+import jakarta.persistence.*;
+import java.util.Set;
+
+@Entity
+@Table(name = "courses")
+public class Course {
+
+    @Id
+    private Integer courseId;
+
+    private String courseName;
+
+    @ManyToMany(mappedBy = "courses")
+    private Set<Student> students;
+
+    @ManyToMany
+    @JoinTable(
+        name = "faculties_courses",
+        joinColumns = @JoinColumn(name = "course_id"),
+        inverseJoinColumns = @JoinColumn(name = "teacher_id")
+    )
+    private Set<Teacher> teachers;
+
+    // Getters and setters
+}
+```
+
+---
+
+### ? `Teacher.java`
+
+```java
+import jakarta.persistence.*;
+import java.util.Set;
+
+@Entity
+@Table(name = "teachers")
+public class Teacher {
+
+    @Id
+    private Integer teacherId;
+
+    private String name;
+
+    private String department;
+
+    @ManyToMany(mappedBy = "teachers")
+    private Set<Course> courses;
+
+    // Getters and setters
+}
+```
+
+---
+
+### ? `EnrollmentId.java` (Embedded Key for Enrollments)
+
+```java
+import jakarta.persistence.Embeddable;
+import java.io.Serializable;
+import java.util.Objects;
+
+@Embeddable
+public class EnrollmentId implements Serializable {
+
+    private Integer studentId;
+    private Integer courseId;
+
+    // equals() and hashCode()
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof EnrollmentId)) return false;
+        EnrollmentId that = (EnrollmentId) o;
+        return Objects.equals(studentId, that.studentId) &&
+               Objects.equals(courseId, that.courseId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(studentId, courseId);
+    }
+
+    // Getters and setters
+}
+```
+
+---
+
+### ? `Enrollment.java`
+
+```java
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "enrollments")
+public class Enrollment {
+
+    @EmbeddedId
+    private EnrollmentId id;
+
+    @ManyToOne
+    @MapsId("studentId")
+    @JoinColumn(name = "student_id")
+    private Student student;
+
+    @ManyToOne
+    @MapsId("courseId")
+    @JoinColumn(name = "course_id")
+    private Course course;
+
+    // Getters and setters
+}
+```
+
+---
+
+### ? `FacultyCourseId.java` (Embedded Key for Faculties\_Courses)
+
+```java
+import jakarta.persistence.Embeddable;
+import java.io.Serializable;
+import java.util.Objects;
+
+@Embeddable
+public class FacultyCourseId implements Serializable {
+
+    private Integer courseId;
+    private Integer teacherId;
+
+    // equals() and hashCode()
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof FacultyCourseId)) return false;
+        FacultyCourseId that = (FacultyCourseId) o;
+        return Objects.equals(courseId, that.courseId) &&
+               Objects.equals(teacherId, that.teacherId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(courseId, teacherId);
+    }
+
+    // Getters and setters
+}
+```
+
+---
+
+### ? `FacultyCourse.java`
+
+```java
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "faculties_courses")
+public class FacultyCourse {
+
+    @EmbeddedId
+    private FacultyCourseId id;
+
+    @ManyToOne
+    @MapsId("courseId")
+    @JoinColumn(name = "course_id")
+    private Course course;
+
+    @ManyToOne
+    @MapsId("teacherId")
+    @JoinColumn(name = "teacher_id")
+    private Teacher teacher;
+
+    // Getters and setters
+}
+```
+
+---
+
+### ?? Notes
+
+* Use **Jakarta annotations (`jakarta.persistence`)** if you're using Spring Boot 3+.
+* All `Set<>` collections can be replaced with `List<>` if ordering matters.
+* Consider adding `@JsonIgnore` (from Jackson) on back-references if you're using Spring Web to avoid infinite recursion in JSON serialization.
+
+---
+
+Let me know if you want:
+
+* Lombok-based versions (`@Getter`, `@Setter`, etc.)
+* Bidirectional vs unidirectional simplification
+* REST controllers or service layer scaffolding
+

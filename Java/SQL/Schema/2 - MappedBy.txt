@@ -1,0 +1,83 @@
+Great! Let's break down **this new line of code**:
+
+```java
+@ManyToMany(mappedBy = "teachers")
+private Set<Course> courses;
+```
+
+---
+
+### 🧠 What This Means
+
+This line defines the **inverse side** of a `@ManyToMany` relationship between a class (likely a `Teacher` class) and a `Course` class.
+
+So let’s assume we’re inside the `Teacher` entity.
+
+---
+
+### 🔍 Annotation Breakdown
+
+#### `@ManyToMany(mappedBy = "teachers")`
+
+* This tells JPA:
+
+  * **"This side is the inverse side"** of the relationship.
+  * **"The owning side is in the `Course` class,"** in a field named `teachers`.
+
+#### `private Set<Course> courses;`
+
+* A teacher can be associated with **many courses**.
+* The relationship is stored as a set of `Course` objects.
+
+---
+
+### 🧩 The Full Relationship (Owning + Inverse Side)
+
+You need to understand both sides to see how this works:
+
+#### ✅ In the `Course` entity (owning side):
+
+```java
+@ManyToMany
+@JoinTable(
+    name = "course_teacher",
+    joinColumns = @JoinColumn(name = "course_id"),
+    inverseJoinColumns = @JoinColumn(name = "teacher_id")
+)
+private Set<Teacher> teachers;
+```
+
+* This is the **owning side**.
+* It defines the join table (`course_teacher`) and the foreign keys.
+
+#### 🔁 In the `Teacher` entity (inverse side):
+
+```java
+@ManyToMany(mappedBy = "teachers")
+private Set<Course> courses;
+```
+
+* This refers to the `teachers` field in the `Course` class.
+* It does **not define** the join table — it just **uses the mapping already defined** in `Course`.
+
+---
+
+### 🧱 What the Join Table Might Look Like
+
+If the join table is `course_teacher`, it would look like this:
+
+| course\_id | teacher\_id |
+| ---------- | ----------- |
+| 101        | 1           |
+| 102        | 1           |
+| 103        | 2           |
+
+---
+
+### ✅ Summary
+
+* The `mappedBy = "teachers"` tells JPA this is the inverse side of the many-to-many relationship.
+* It avoids creating a **second join table**.
+* The actual join table is only defined in the `Course` entity (owning side).
+
+Would you like a complete example with both entity classes for clarity?
