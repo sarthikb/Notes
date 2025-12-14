@@ -1,0 +1,241 @@
+Great — here is a **clear and complete Dynamo-style client reconciliation example**, showing how **vector clocks + siblings + client-side reconciliation** work together in Amazon’s Dynamo-like systems (including Riak).
+
+This will explain EXACTLY how conflicts are detected and resolved **when multiple versions exist**, and how the client plays an active role.
+
+---
+
+# ⭐ **Dynamo-Style Client Reconciliation Example**
+
+(Realistic, step-by-step, with vector clocks + concurrent updates)
+
+We’ll use the classic Dynamo example: **a shopping cart**.
+
+## Cluster setup
+
+Nodes:
+
+```
+N1, N2, N3
+```
+
+Replicas:
+All three hold copies of the key:
+
+```
+Key = "cart:1234"
+```
+
+Initial value:
+
+```
+["book"]
+Vector Clock = {N1:1, N2:1, N3:1}
+```
+
+---
+
+# 🟥 **Step 1 — Network Partition Occurs**
+
+The client is partitioned and can only talk to:
+
+* **Client A → N2**
+* **Client B → N3**
+
+Both independently update the cart.
+
+---
+
+# 🟥 **Step 2 — Conflicting Updates Occur**
+
+### ✔ Client A adds “pen” (via N2)
+
+N2 increments its clock:
+
+```
+Value = ["book", "pen"]
+VC = {N1:1, N2:2, N3:1}
+```
+
+This newer version is stored on N2 and replicated to N1.
+
+---
+
+### ✔ Client B adds “pencil” (via N3)
+
+N3 increments its own entry:
+
+```
+Value = ["book", "pencil"]
+VC = {N1:1, N2:1, N3:2}
+```
+
+This version is stored on N3 and replicated to N1.
+
+---
+
+Now N1 stores **two conflicting versions**, because:
+
+```
+{N1:1, N2:2, N3:1}   // from N2’s write
+{N1:1, N2:1, N3:2}   // from N3’s write
+```
+
+Neither dominates → **they are concurrent** → conflict.
+
+### N1 stores both as siblings:
+
+```
+Sibling #1 = ["book", "pen"]
+Sibling #2 = ["book", "pencil"]
+```
+
+---
+
+# 🟥 **Step 3 — Client Reads the Cart Again**
+
+Client A reconnects and does a GET on `cart:1234`.
+
+Dynamo returns **all siblings**:
+
+```
+{
+  siblings: [
+    { value: ["book", "pen"],
+      vclock: {N1:1, N2:2, N3:1} },
+
+    { value: ["book", "pencil"],
+      vclock: {N1:1, N2:1, N3:2} }
+  ]
+}
+```
+
+This is **the core idea**:
+👉 Dynamo does *not* resolve conflicts on the server.
+👉 The **client must merge** the versions.
+
+---
+
+# 🟥 **Step 4 — Client-Side Reconciliation Logic**
+
+(“application-level merge”)
+
+Common Dynamo merge strategy for shopping carts:
+
+```
+Merged = union of all carts
+Merged = ["book", "pen", "pencil"]
+```
+
+This merge function is written by the **application developer**, not by Dynamo.
+
+---
+
+# 🟥 **Step 5 — Client Writes the Merged Version Back**
+
+This is the “read → reconcile → write” cycle.
+
+Client writes the merged version:
+
+```
+PUT("cart:1234", ["book", "pen", "pencil"])
+```
+
+Dynamo attaches a **new merged vector clock** by taking element-wise max and incrementing:
+
+Sibling clocks:
+
+```
+{N1:1, N2:2, N3:1}
+{N1:1, N2:1, N3:2}
+```
+
+Max merge:
+
+```
+{N1:1, N2:2, N3:2}
+```
+
+Client increments its coordinator’s entry (assume write via N1):
+
+```
+New VC = {N1:2, N2:2, N3:2}
+```
+
+---
+
+# 🟩 **Step 6 — Replicas Overwrite Old Siblings**
+
+N1 stores:
+
+```
+["book", "pen", "pencil"]
+VC = {N1:2, N2:2, N3:2}
+```
+
+N2 and N3 receive this new version through replication.
+
+Now **all nodes converge** and **no siblings remain**.
+
+---
+
+# ⭐ Final State After Reconciliation
+
+```
+Value: ["book", "pen", "pencil"]
+Vector Clock: {N1:2, N2:2, N3:2}
+```
+
+All replicas agree and conflict is resolved **by the client**, not the server.
+
+---
+
+# ⭐ Key Concepts Highlighted
+
+### ✔ Nodes store conflicting versions as **siblings**
+
+(Not overwritten immediately)
+
+### ✔ Client receives **all conflicting versions**
+
+(Not just one)
+
+### ✔ Client merges siblings according to app rules
+
+(Carts → union, docs → merge fields, counters → sum, etc.)
+
+### ✔ Client writes back a **new resolved version**
+
+(Server never picks a winner)
+
+### ✔ Vector clock merging ensures **causal correctness**
+
+(No false overwrites)
+
+---
+
+# ⭐ Why Dynamo Does It This Way
+
+Dynamo was designed for:
+
+* low-latency writes
+* independent partitions
+* high availability (AP system in CAP)
+
+Thus:
+
+* no strict ordering
+* no strong consistency
+* conflicts resolved at the edges (client/app)
+
+---
+
+# Want More?
+
+I can also give you:
+
+✅ A diagram (timeline) of the full flow
+✅ A table comparing “server-side conflict resolution” vs “client-side”
+✅ The exact vector clock merging algorithm
+✅ How systems like Cassandra evolved past vector clocks into hybrid clocks
+
+Just tell me!

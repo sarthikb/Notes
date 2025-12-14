@@ -1,0 +1,125 @@
+Here’s a **brief but detailed overview of the major Java 8 features**—clear, concise, and practical:
+
+---
+
+# **Java 8 Key Features (with brief details)**
+
+## **1. Lambda Expressions**
+
+* Introduce functional-style programming in Java.
+* Allow writing concise code by passing behavior as methods.
+* Example:
+
+  ```java
+  (a, b) -> a + b
+  ```
+* Commonly used with functional interfaces (interfaces with one abstract method).
+
+---
+
+## **2. Functional Interfaces**
+
+* Interfaces with exactly one abstract method.
+* Annotated with `@FunctionalInterface`.
+* Examples: `Runnable`, `Callable`, `Comparator`, and new ones like `Function`, `Predicate`, `Consumer`.
+
+---
+
+## **3. Stream API**
+
+* A major addition for processing collections in a functional way.
+* Supports operations like `map`, `filter`, `reduce`, `sorted`, `collect`.
+* Enables lazy evaluation and parallel execution.
+* Example:
+
+  ```java
+  list.stream().filter(x -> x > 10).collect(Collectors.toList());
+  ```
+
+---
+
+## **4. Default & Static Methods in Interfaces**
+
+* Interfaces can now contain method implementations.
+* Helps in evolving APIs without breaking existing code.
+* Example:
+
+  ```java
+  default void log() { ... }
+  static void print() { ... }
+  ```
+
+---
+
+## **5. Optional Class**
+
+* Avoids `NullPointerException` by providing a container object which may or may not contain a value.
+* Example:
+
+  ```java
+  Optional.ofNullable(value).orElse("default");
+  ```
+
+---
+
+## **6. New Date & Time API (java.time)**
+
+* Provides modern, immutable, thread-safe date/time classes.
+* Replaces outdated `java.util.Date` and `Calendar`.
+* Key classes: `LocalDate`, `LocalTime`, `LocalDateTime`, `ZonedDateTime`, `Duration`, `Period`.
+
+---
+
+## **7. Method References**
+
+* Shorter way to refer to existing methods.
+* Types:
+
+  * Static method → `Class::staticMethod`
+  * Instance method → `obj::instanceMethod`
+  * Constructor → `Class::new`
+
+---
+
+## **8. Nashorn JavaScript Engine**
+
+* A lightweight JavaScript engine for executing JS code on the JVM.
+* Replaced the older Rhino engine.
+
+---
+
+## **9. Parallel Streams**
+
+* A special mode of streams to utilize multi-core processors.
+* Example:
+
+  ```java
+  list.parallelStream().forEach(System.out::println);
+  ```
+
+---
+
+## **10. CompletableFuture (Enhanced Concurrency API)**
+
+* Supports asynchronous programming.
+* Allows chaining tasks using methods like `thenApply`, `thenAccept`, `supplyAsync`.
+
+---
+
+## **11. Improved Type Inference (Target Typing)**
+
+* The compiler better understands types in generics.
+* Example:
+
+  ```java
+  List<String> list = new ArrayList<>();
+  ```
+
+---
+
+## **12. Repeating Annotations**
+
+* Same annotation can be used multiple times on a single element.
+* Enabled via `@Repeatable`.
+
+---

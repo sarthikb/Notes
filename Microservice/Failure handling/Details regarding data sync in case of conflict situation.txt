@@ -1,0 +1,226 @@
+Great question — **this is exactly the “hard part” in Dynamo-style systems**:
+**What happens when a node goes down before replication finishes?**
+AND
+**What if data is deleted on replicas while another replica is down?**
+
+Let’s break it down clearly and completely.
+
+---
+
+# ⭐ SCENARIO
+
+We use 3 replicas (N1, N2, N3) for a key `cart-123`.
+
+```
+Replication factor = 3
+```
+
+### **Case 1: N1 writes `cart-123` but goes down before replicating the write to N2/N3**
+
+### **Case 2: Later, `cart-123` is deleted from N2/N3**
+
+### **Case 3: N1 comes back online**
+
+We want to know:
+
+* How does data sync?
+* Does the key get resurrected?
+* How do deletions propagate?
+
+Let’s go through both cases properly.
+
+---
+
+# 🟥 CASE 1 — N1 WRITES A KEY BUT FAILS BEFORE REPLICATING
+
+This is known as a **failed write before quorum**.
+
+### N1 writes:
+
+```
+cart-123 = ["book"]
+VC = {N1:1}
+```
+
+But before it sends the replicas, **N1 crashes**.
+
+### N2 and N3 have:
+
+```
+NO copy of cart-123
+```
+
+### What happens?
+
+⚠️ **The write is LOST** in Dynamo-style systems
+IF the write did not reach any other replica AND
+IF the client did not receive a successful response.
+
+**Dynamo’s guarantee is AP (availability), not durability.**
+If the write did not reach enough replicas before N1 crashed, there's no guarantee it persists.
+
+---
+
+# ⭐ IMPORTANT
+
+### ✔ If the client received a success → Dynamo guarantees the write is durable
+
+(because it happened on at least *W* replicas)
+
+### ❌ If the client did NOT receive a success → the write may be lost
+
+(because only N1 had it and N1 crashed)
+
+This is by design.
+
+---
+
+# 🟦 CASE 2 — Later, N2 and N3 DELETE THE KEY
+
+Imagine the user performs a DELETE:
+
+**Client → N2: DELETE cart-123**
+
+N2 and N3 write a **tombstone** instead of deleting immediately:
+
+```
+cart-123 = TOMBSTONE
+VC = {N2:1}
+```
+
+(This is crucial for consistency.)
+
+---
+
+# ⭐ What is a Tombstone?
+
+A tombstone is a special marker representing deletion.
+
+* It has a vector clock
+* It participates in conflict resolution
+* It prevents “ghost resurrection” of stale data
+* It eventually gets garbage collected
+
+---
+
+# 🟩 CASE 3 — N1 COMES BACK ONLINE
+
+N1 still has the stale version:
+
+```
+cart-123 = ["book"]
+VC = {N1:1}
+```
+
+N2 and N3 have the delete marker:
+
+```
+cart-123 = TOMBSTONE
+VC = {N2:1}
+```
+
+Now reconciliation happens.
+
+---
+
+# ⭐ FINAL OUTCOME — VECTOR CLOCK COMPARISON
+
+Compare clocks:
+
+N1: `{N1:1}`
+N2: `{N2:1}`
+
+Neither dominates the other → **concurrent versions**
+
+→ Dynamo treats this as a conflict:
+
+* One version: “book”
+* Another version: “deleted” (tombstone)
+
+### Who wins?
+
+👉 **The deletion wins**
+because Dynamo treats tombstones as valid versions and (generally) gives them priority during read-repair and anti-entropy repair.
+
+Thus:
+
+### When N1 syncs, it receives the tombstone and **overwrites its live data**.
+
+N1 becomes consistent:
+
+```
+cart-123 = TOMBSTONE
+VC = {N1:1, N2:1}  // merged and incremented
+```
+
+Eventually (after GC delay), the key disappears.
+
+---
+
+# ⭐ WHY THE DELETION WINS (DYNAMO RULE)
+
+Because in Dynamo systems:
+
+* A delete is just another write
+* And a tombstone is considered a **version of the object**
+* A system must not resurrect old data
+* So **tombstones override stale values**
+
+This is the only safe choice.
+
+---
+
+# ⭐ FULL SUMMARY (Very Important)
+
+### 🟥 **Case: N1 writes a key but dies before replication**
+
+* If the client never got a success → the write may be lost
+* This is normal in AP systems
+* No official version exists until quorum is met
+
+### 🟧 **Case: N2/N3 delete the key while N1 is down**
+
+* They write a **tombstone**
+* Tombstones propagate like normal writes
+
+### 🟩 **When N1 comes back:**
+
+* It sends its old vector-clocked value
+* N2/N3 send the tombstone
+* Vector clocks conflict
+* Tombstone wins (deletion takes precedence)
+
+Thus:
+
+➡ **Old data on N1 is deleted**
+➡ **No ghost updates or resurrection**
+➡ **Cluster converges to "deleted" state**
+
+---
+
+# ⭐ OPTIONAL — What if N1 had MANY missing keys?
+
+Dynamo uses:
+
+### ✔ **Hinted Handoff**
+
+If another node had a “hint” for N1, it would replay the missing writes.
+
+### ✔ **Merkle Tree Anti-Entropy Repair**
+
+Nodes compare hash trees of key ranges to detect missing or differing keys.
+
+### ✔ **Read Repair**
+
+Reads automatically repair stale replicas.
+
+---
+
+# ⭐ Want me to show this with:
+
+✔ a step-by-step timeline
+✔ a table showing vector clock evolution
+✔ diagrams showing the sync process
+✔ or a multi-key example?
+
+Just say **yes** and I’ll prepare it.

@@ -1,0 +1,148 @@
+When a server (node) comes back online after a failure, **it cannot assume its local data is correct**—because other replicas may have accepted writes while it was down.
+So the cluster must bring the node “back up to date.”
+This process is called **reconciliation** or **replica catch-up** or **synchronization**.
+
+The exact mechanism depends on the system (gossip-based, consensus-based, log-based, etc.).
+Below is a clear breakdown of how it works in different types of distributed systems.
+
+---
+
+# ⭐ **1. In Gossip-based Eventually Consistent Systems (e.g., Cassandra, Dynamo)**
+
+Gossip only synchronizes **metadata**, not full data.
+After a node re-joins, it does **data repair** using techniques like:
+
+---
+
+## **① Hinted Handoff**
+
+While the node was down, other nodes temporarily stored “hints”:
+
+```
+"Node N3 missed this write; send it later."
+```
+
+When N3 comes back:
+
+* Nodes holding hints push the missed writes to N3.
+* N3 applies them to its local storage.
+
+Good for **short outages**.
+
+---
+
+## **② Read Repair**
+
+During a read after N3 returns:
+
+* Clients read from multiple replicas
+* If replicas disagree, the newest version is used
+* Older replicas get updated in the background
+
+Keeps replicas converging over time.
+
+---
+
+## **③ Anti-Entropy Repair (Merkle Trees)**
+
+For long outages, hints may expire.
+So nodes run a full repair using **Merkle trees**:
+
+* Each replica computes a hash tree of its data
+* Nodes compare the trees
+* Only differing data ranges are transferred to the recovering node
+
+This is robust but more expensive.
+
+---
+
+# ⭐ **2. In Strongly Consistent Systems (e.g., Raft, Paxos)**
+
+Here the recovering node must strictly catch up with the **replicated log**.
+
+---
+
+## **① Write-Ahead Log Replication**
+
+During failure, the leader continues appending log entries:
+
+```
+Index: 11, 12, 13, 14 ...
+```
+
+When the node rejoins:
+
+* Node asks the leader for missing log entries
+* Leader streams the log to the recovering node
+* Node replays the log to rebuild its state machine
+* Once fully caught up, node becomes a voting member again
+
+This ensures **strong consistency**, since all nodes apply the exact same log in the exact same order.
+
+---
+
+## **② Snapshot + Log Catch-Up**
+
+If too many logs accumulated while the node was offline:
+
+1. Leader sends the latest **snapshot** of the database
+2. Then sends only the remaining log entries after the snapshot
+3. Node restores snapshot + applies logs → fully updated
+
+This keeps recovery efficient.
+
+---
+
+# ⭐ **3. In Broadcast-Based Replication (e.g., naive primary-secondary)**
+
+If broadcast is used (not recommended for strict consistency):
+
+* The primary keeps a change log
+* When a follower comes back:
+
+  * It requests the missing updates
+  * Primary re-sends them
+
+But this method lacks:
+
+* ordering guarantees
+* durability
+* correct handling of split-brain
+  → This is why strict systems rely on Raft/Paxos, not broadcast.
+
+---
+
+# ⭐ **4. Putting It All Together (Short Summary)**
+
+### **If the system is eventually consistent (e.g., Cassandra):**
+
+Recovering node syncs data via:
+
+* hinted handoff
+* read repair
+* anti-entropy repair (Merkle trees)
+
+### **If the system is strongly consistent (e.g., Raft/Paxos):**
+
+Recovering node syncs via:
+
+* applying missing log entries from leader
+* or snapshot + log tail
+  → Ensures strict ordering and full consistency.
+
+### **If the system uses simple replication/broadcast:**
+
+Recovering node pulls missing updates from the primary, but this does **not** guarantee strong consistency.
+
+---
+
+# ⭐ Want deeper detail?
+
+I can also explain:
+
+* How Raft leader streams logs step by step
+* Cassandra’s read repair & hinted handoff with real examples
+* How Kubernetes etcd performs snapshot-based recovery
+* Differences in sync time for long outages vs short outages
+
+Just tell me which system you want to dive deeper into.
