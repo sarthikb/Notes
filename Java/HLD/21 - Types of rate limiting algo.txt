@@ -1,0 +1,429 @@
+Rate limiting algorithms control **how many requests a client can make in a given time window**. In real systems (APIs, gateways, microservices), multiple algorithms are used depending on **accuracy, memory usage, burst handling, and distribution needs**.
+
+Below is a **clear, detailed, production-oriented explanation** of **all major rate-limiting algorithms**, how they work internally, pros/cons, and **where they are actually used**.
+
+---
+
+# 1. Fixed Window Counter
+
+## How It Works
+
+* Time is divided into **fixed windows** (e.g., 1 minute).
+* A counter tracks requests per key (IP, user, API key).
+* Counter resets at the start of each window.
+
+### Example
+
+Limit: **100 requests per minute**
+
+```
+12:00:00 – 12:00:59 → counter = 0
+Client sends 100 requests → allowed
+At 12:01:00 → counter resets to 0
+```
+
+⚠️ Problem:
+Client can send:
+
+* 100 requests at 12:00:59
+* 100 requests at 12:01:00
+  → **200 requests in 1 second**
+
+---
+
+## Implementation (Pseudo-code)
+
+```text
+key = user_id + current_minute
+if counter[key] < LIMIT:
+    counter[key] += 1
+    allow
+else:
+    block
+```
+
+---
+
+## Pros
+
+✔ Very simple
+✔ Low memory
+✔ Easy to implement with Redis or in-memory cache
+
+## Cons
+
+❌ Burst problem at window boundaries
+❌ Not precise
+
+## Used By
+
+* Simple APIs
+* Internal tools
+* Low-risk endpoints
+
+---
+
+# 2. Sliding Window Log
+
+## How It Works
+
+* Stores **timestamps of every request**.
+* Removes timestamps older than the window.
+* Allows request if count < limit.
+
+### Example
+
+Limit: **5 requests per 10 seconds**
+
+Request timestamps:
+
+```
+[1, 2, 4, 7, 9]
+```
+
+At time `10`:
+
+* All within window → block new request
+
+---
+
+## Implementation
+
+```text
+timestamps = list of request_times
+remove times < now - window
+if size(timestamps) < limit:
+    add now
+    allow
+else:
+    block
+```
+
+---
+
+## Pros
+
+✔ Extremely accurate
+✔ No burst problem
+
+## Cons
+
+❌ High memory usage
+❌ Slow for high traffic
+❌ Not scalable for millions of users
+
+## Used By
+
+* Security-critical APIs
+* Low-volume but sensitive systems
+
+---
+
+# 3. Sliding Window Counter (Hybrid)
+
+## How It Works
+
+Combines:
+
+* **Fixed window counter**
+* **Weighted overlap** from previous window
+
+### Formula
+
+```
+effective_count =
+  current_window_count +
+  previous_window_count × overlap_percentage
+```
+
+### Example
+
+Limit: **100 req/min**
+
+At `12:00:30`:
+
+* Current window count = 40
+* Previous window count = 80
+* Overlap = 50%
+
+```
+Effective = 40 + (80 × 0.5) = 80
+```
+
+---
+
+## Pros
+
+✔ More accurate than fixed window
+✔ Lower memory than log
+✔ Good burst handling
+
+## Cons
+
+❌ Slightly complex
+❌ Approximation, not exact
+
+## Used By
+
+* **Redis-based API gateways**
+* Cloud load balancers
+* High-scale systems
+
+---
+
+# 4. Token Bucket (Most Popular)
+
+## How It Works
+
+* Bucket holds **tokens**
+* Tokens are added at a fixed rate
+* Each request consumes 1 token
+* If no tokens → request blocked
+
+### Example
+
+* Rate: 10 tokens/sec
+* Bucket size: 20
+
+Client can:
+
+* Burst 20 requests instantly
+* Then sustain 10 req/sec
+
+---
+
+## Visualization
+
+```
+Bucket Capacity: 20
+Token Refill: +10/sec
+
+Request → remove 1 token
+No token → reject
+```
+
+---
+
+## Implementation
+
+```text
+tokens += rate × (now - last_checked)
+tokens = min(tokens, capacity)
+
+if tokens >= 1:
+    tokens -= 1
+    allow
+else:
+    block
+```
+
+---
+
+## Pros
+
+✔ Allows bursts
+✔ Smooth request flow
+✔ Very efficient
+✔ Easy to distribute with Redis
+
+## Cons
+
+❌ Slightly complex math
+❌ Needs accurate clocks
+
+## Used By
+
+* **AWS API Gateway**
+* **NGINX**
+* **Kong**
+* **Envoy**
+
+---
+
+# 5. Leaky Bucket
+
+## How It Works
+
+* Requests enter a queue (bucket)
+* Bucket leaks at a **constant rate**
+* If bucket overflows → reject
+
+### Key Difference
+
+* **Token Bucket** allows bursts
+* **Leaky Bucket** smooths traffic
+
+---
+
+## Example
+
+* Leak rate: 5 req/sec
+* Burst of 20 requests:
+
+  * Processed at steady 5/sec
+  * Excess rejected if bucket full
+
+---
+
+## Implementation
+
+```text
+if queue_size < capacity:
+    enqueue(request)
+else:
+    reject
+
+process at fixed rate
+```
+
+---
+
+## Pros
+
+✔ Smooth traffic
+✔ Protects backend services
+
+## Cons
+
+❌ No burst tolerance
+❌ Adds latency
+
+## Used By
+
+* Network routers
+* Traffic shaping
+* Legacy systems
+
+---
+
+# 6. Distributed Rate Limiting (Redis-Based)
+
+## Why Needed
+
+In microservices:
+
+* Multiple instances
+* Local counters don’t work
+
+### Solution
+
+Use **centralized store (Redis)**
+
+---
+
+## Redis + Token Bucket Example
+
+```lua
+-- Lua script (atomic)
+tokens = min(capacity, tokens + refill)
+if tokens >= 1 then
+  tokens = tokens - 1
+  allow
+else
+  block
+end
+```
+
+---
+
+## Challenges
+
+❌ Network latency
+❌ Redis failure risk
+
+### Mitigations
+
+✔ Local caching
+✔ Fail-open or fail-closed strategies
+
+---
+
+# 7. Adaptive / Dynamic Rate Limiting
+
+## How It Works
+
+Rate changes based on:
+
+* CPU usage
+* Latency
+* Error rate
+
+### Example
+
+```
+If latency > 500ms → reduce limit
+If healthy → increase limit
+```
+
+---
+
+## Used By
+
+* Netflix
+* Google
+* Service meshes (Envoy)
+
+---
+
+# 8. AI / Behavior-Based Rate Limiting
+
+## How It Works
+
+* Uses ML models
+* Learns normal behavior
+* Blocks anomalies
+
+### Example
+
+* Normal user: 5 req/sec
+* Bot: 50 req/sec → throttled
+
+---
+
+## Used By
+
+* Cloudflare
+* Akamai
+* AWS Shield
+
+---
+
+# 9. Comparison Table
+
+| Algorithm       | Burst | Accuracy  | Memory | Distributed |
+| --------------- | ----- | --------- | ------ | ----------- |
+| Fixed Window    | ❌     | Low       | Low    | ✔           |
+| Sliding Log     | ❌     | Very High | High   | ❌           |
+| Sliding Counter | ✔     | High      | Medium | ✔           |
+| Token Bucket    | ✔✔    | High      | Low    | ✔           |
+| Leaky Bucket    | ❌     | Medium    | Low    | ✔           |
+| Adaptive        | ✔     | High      | Medium | ✔           |
+
+---
+
+# 10. Which One Should You Use?
+
+### General Recommendation
+
+* **APIs / Microservices** → **Token Bucket**
+* **Security / Auth endpoints** → **Sliding Window**
+* **Network traffic shaping** → **Leaky Bucket**
+* **Massive scale systems** → **Sliding Window Counter**
+
+---
+
+## Final Takeaway
+
+> Rate limiting is a **trade-off between precision, performance, and scalability**.
+> **Token Bucket + Redis** is the industry default for most modern systems.
+
+---
+
+If you want next:
+
+* **Exact Redis Lua scripts**
+* **Rate limiting in NGINX / Envoy**
+* **Kubernetes ingress examples**
+* **Interview-ready explanations**
+
+Just tell me.
