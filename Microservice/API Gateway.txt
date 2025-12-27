@@ -1,0 +1,139 @@
+Here’s a detailed set of notes based on the **YouTube video “API Gateways in System Design Interviews w/ Ex-Meta Staff Engineer”** (video ID: `7-6F3b14baA`) — a talk aimed at explaining API gateways and their role in system design interviews, especially at FAANG-style companies: ([YouTube][1])
+
+[API Gateways in System Design Interviews w/ Ex‑Meta Staff Engineer (Hello Interview)](https://www.youtube.com/watch?v=7-6F3b14baA&utm_source=chatgpt.com)
+
+---
+
+## **Detailed Notes & Summary**
+
+### **1. Introduction (0:00–2:52)**
+
+* **Speaker & Context:**
+  The video is presented by *Hello Interview – SWE Interview Preparation*, hosted by Evan King, a former Meta Staff Engineer. The focus is on system design interviews, with this talk specifically on **API Gateways**. ([YouTube][1])
+
+* **Motivation & Interview Relevance:**
+  API gateways are frequently mentioned in interview questions about distributed systems and microservices. They are **important in real-world service architectures**, not just interview trivia. ([LinkedIn][2])
+
+---
+
+### **2. What Is an API Gateway? (2:52–5:10)**
+
+* An **API Gateway** is a *central point of entry* between clients and backend services in a distributed system. ([GeeksforGeeks][3])
+
+* It acts like a **reverse proxy** — receiving requests from clients and forwarding them to appropriate services. ([GeeksforGeeks][3])
+
+* **Core responsibilities:**
+
+  * **Routing:** Directs requests to the correct backend service.
+  * **Authentication & Authorization:** Ensures requesters are allowed to access APIs.
+  * **Rate Limiting / Throttling:** Limits how often a client can make requests in a given period.
+  * **Security Controls:** Helps enforce API security policies (e.g., token validation). ([GeeksforGeeks][4])
+
+---
+
+### **3. Why API Gateways Matter in Distributed Systems**
+
+* API gateways help **simplify interactions** when there are many microservices rather than one monolith.
+
+  * Without a gateway, clients would need to call each microservice directly.
+  * With one gateway, clients only need to interact with one endpoint. ([GeeksforGeeks][5])
+
+* They also **abstract complexity** from clients — handling tasks like protocol translation, request aggregation, and even caching. ([System Design School][6])
+
+---
+
+### **4. Common Use-Cases & Examples (from system design interview perspective)**
+
+> *Note: specific timestamps or diagrams might be in the video itself. The summary below structures typical interview content.*
+
+#### **Routing and Aggregation**
+
+* API gateway can take a single client request and internally call multiple services.
+* It gathers data from different services and returns one combined response. ([System Design School][6])
+
+#### **Authentication**
+
+* Validates tokens (like JWT, OAuth).
+* Ensures only authorized clients can access protected services. ([GeeksforGeeks][4])
+
+#### **Rate Limiting & Security**
+
+* Protects backend from abuse by limiting calls.
+* Can integrate with firewalls or security checks. ([GeeksforGeeks][4])
+
+#### **Caching**
+
+* Frequently accessed resources can be cached at the gateway layer for performance.
+
+---
+
+### **5. API Gateway in Interview Scenarios**
+
+* **How interviewers see it:**
+
+  * Candidates should briefly explain what an API gateway is.
+  * Often it’s mentioned *but you shouldn’t spend too much time* on it — then move to the deeper aspects of the system’s design. ([LinkedIn][2])
+
+* **What interviewers want to assess:**
+
+  * Awareness of **intermediate architectural layers**.
+  * Understanding of **why gateways exist** (centralized routing, security, abstraction).
+  * Ability to **justify design choices** like adding or skipping a gateway. ([LinkedIn][2])
+
+---
+
+### **6. Pros & Trade-offs of Using API Gateways**
+
+#### **Pros**
+
+* Central point to handle cross-cutting concerns (security, monitoring).
+* Simplifies client implementation.
+* Helps evolve backend services independently.
+
+#### **Trade-offs**
+
+* **Single point of failure** — if not architected for high availability.
+* **Latency overhead** — adds one more network hop.
+* **Complexity** — adds another layer to manage. ([System Design School][6])
+
+---
+
+### **7. Real-World Examples (General Knowledge, Not Video-Direct)**
+
+* **AWS API Gateway:**
+  Managed gateway service from AWS that offers routing, authentication, rate limiting, etc. ([System Design School][6])
+
+* **Kong / NGINX:**
+  Open-source options often used for custom gateway logic. ([System Design School][6])
+
+---
+
+### **8. Interview-Ready Explanation Template**
+
+Here’s a short, interview-friendly way to talk about API gateways:
+
+> “An API gateway is a centralized entry point in a microservices-based architecture that routes client requests to the appropriate backend services. It handles concerns like authentication, rate limiting, logging, and can even combine responses from multiple services. In an interview, briefly describe its core role, then focus on the higher-level design decisions your system requires.” ([LinkedIn][2])
+
+---
+
+## **Key Concepts to Remember**
+
+* **Gateway vs Direct Calls:**
+  Gateways simplify client interfaces and centralize concerns, but they add overhead. ([GeeksforGeeks][5])
+
+* **Security & Rate Limiting:**
+  Important functions often implemented at the gateway layer. ([GeeksforGeeks][4])
+
+* **Interviews vs Engineering:**
+  Interviewers want both clarity on what it is *and an ability to place it correctly in your larger system design.** ([LinkedIn][2])
+
+---
+
+If you want **timestamped bullet points or a full transcript summary**, tell me and I can provide that too!
+
+[1]: https://www.youtube.com/watch?v=7-6F3b14baA&utm_source=chatgpt.com "API Gateways in System Design Interviews w/ Ex-Meta Staff Engineer - YouTube"
+[2]: https://www.linkedin.com/posts/evan-king-40072280_api-gateways-in-system-design-interviews-activity-7318788345461895168-elGN?utm_source=chatgpt.com "What is an API Gateway and why does almost every system design have one? | Evan King"
+[3]: https://www.geeksforgeeks.org/what-is-api-gateway-system-design/?utm_source=chatgpt.com "What is API Gateway? - GeeksforGeeks"
+[4]: https://www.geeksforgeeks.org/system-design/api-gateway-security-in-system-design/?utm_source=chatgpt.com "API Gateway Security in System Design - GeeksforGeeks"
+[5]: https://www.geeksforgeeks.org/system-design/why-do-we-need-api-gateway/?utm_source=chatgpt.com "Why do we need API gateway? - GeeksforGeeks"
+[6]: https://systemdesignschool.io/primer?utm_source=chatgpt.com "System Design Primer"

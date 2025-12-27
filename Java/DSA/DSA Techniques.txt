@@ -1,0 +1,77 @@
+These detailed notes cover the 15 essential coding patterns discussed in the video, which help in solving a wide variety of LeetCode problems and are frequently used in interviews at companies like Google and Amazon.
+
+### **1. Prefix Sum**
+*   **Use Case:** Ideal for querying the sum of elements within a subarray.
+*   **Mechanism:** Create a prefix sum array where each index $i$ stores the sum of all elements from the start to $i$. 
+*   **Advantage:** Reduces multiple range sum queries from $O(N \cdot M)$ to **$O(1)$** time using the formula: `sum(i, j) = P[j] - P[i-1]`.
+*   **Space Optimization:** Sometimes the input array can be used for prefix sums to save space.
+
+### **2. Two Pointers**
+*   **Use Case:** Useful for checking properties like palindromes or searching for specific pairs in a data set.
+*   **Mechanism:** Initialize two variables and move them toward each other or away from each other based on the problem logic.
+*   **Advantage:** Often reduces time complexity from **$O(N^2)$ to $O(N)$**.
+
+### **3. Sliding Window**
+*   **Use Case:** Used to find subarrays or substrings that meet specific criteria (e.g., maximum sum of a subarray of size $K$).
+*   **Mechanism:** Instead of recalculating overlapping parts, the window "slides" by adding a new element and subtracting the leftmost element.
+*   **Advantage:** Reduces time complexity from **$O(N \cdot K)$ to $O(N)$**.
+
+### **4. Fast and Slow Pointers**
+*   **Use Case:** Solving problems involving cycles in linked lists or arrays, and finding the middle node of a linked list.
+*   **Mechanism:** Two pointers move at different speeds (e.g., one moves one node, the other moves two).
+*   **Key Insight:** If a cycle exists, the pointers will eventually meet. If the fast pointer reaches the end, the slow pointer will be at the middle.
+
+### **5. Linked List In-Place Reversal**
+*   **Use Case:** Rearranging nodes and pointers in a linked list without using extra space.
+*   **Mechanism:** Use three pointers—`previous`, `current`, and `next`—to reverse the links between nodes in a single pass.
+*   **Constraint:** This approach is specifically for problems requiring $O(1)$ extra space.
+
+### **6. Monotonic Stack**
+*   **Use Case:** Finding the next greater or next smaller element in an array.
+*   **Mechanism:** Maintain stack elements in a specific order (increasing for the next smaller, decreasing for the next greater).
+*   **Advantage:** Improves brute force solutions from $O(N^2)$ to **$O(N)$**.
+
+### **7. Top K Elements**
+*   **Use Case:** Finding the $K$ largest, smallest, or most frequent elements.
+*   **Mechanism:** Use a **Min Heap** for $K$ largest elements or a **Max Heap** for $K$ smallest elements. 
+*   **Advantage:** Reduces complexity from $O(N \log N)$ (sorting) to **$O(N \log K)$**.
+
+### **8. Overlapping Intervals**
+*   **Use Case:** Problems involving merging intervals, finding intersections, or inserting new intervals into a non-overlapping list.
+*   **Mechanism:** Sort intervals by start time, then iterate and check if the current interval overlaps with the last merged interval.
+
+### **9. Modified Binary Search**
+*   **Use Case:** Searching in arrays that are not perfectly sorted, such as rotated sorted arrays, arrays with duplicates, or finding peak elements.
+*   **Mechanism:** Add logic to standard binary search to determine which half of the array is sorted and whether the target lies within that range.
+
+### **10. Binary Tree Traversal**
+*   **Pre-order:** Best for tree serialization or creating copies.
+*   **In-order:** Best for retrieving values from a Binary Search Tree (BST) in sorted order.
+*   **Post-order:** Best for processing children before parents (e.g., deleting a tree).
+*   **Level-order:** Explores nodes level by level using a **Queue** data structure.
+
+### **11. Depth First Search (DFS)**
+*   **Use Case:** Exploring all paths or branches in graphs/trees to find topological order or detect cycles.
+*   **Mechanism:** Implemented recursively or iteratively using a **Stack**; it is vital to keep track of visited nodes to avoid infinite loops.
+
+### **12. Breadth First Search (BFS)**
+*   **Use Case:** Finding the shortest path in unweighted graphs or printing tree nodes level by level.
+*   **Mechanism:** Uses a **Queue** to explore nodes level by level and a visited set to track processed nodes.
+
+### **13. Matrix Traversal**
+*   **Use Case:** Solving grid-based problems, such as counting islands.
+*   **Mechanism:** Treat matrix cells as nodes and adjacent cells (horizontal, vertical, diagonal) as edges.
+*   **Application:** Apply DFS or BFS to explore connected components within the grid.
+
+### **14. Backtracking**
+*   **Use Case:** Exploring all potential solutions for puzzles (Sudoku, N-Queens), permutations, combinations, or subsets.
+*   **Mechanism:** Use recursion to make a choice; if that path doesn't lead to a solution, "backtrack" and try a different choice.
+
+### **15. Dynamic Programming (DP)**
+*   **Use Case:** Optimization problems requiring the maximization or minimization of a value, or counting problems.
+*   **Requirement:** The problem must have **overlapping subproblems** and **optimal substructure**.
+*   **Common Patterns:** Fibonacci numbers, 0/1 Knapsack, and Longest Common Subsequence.
+
+***
+
+**Analogy:** Learning these patterns is like a chef learning fundamental techniques rather than memorizing individual recipes. Once you understand how to "sauté" or "braise" (the patterns), you can walk into any kitchen (an interview) and prepare a wide variety of dishes (problems) you’ve never seen before.
