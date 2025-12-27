@@ -1,0 +1,131 @@
+**Prometheus is pull-based by design.**
+
+Here’s a clear breakdown, with real-world context and the one important exception.
+
+---
+
+## Default Model: **Pull-Based** ✅
+
+### How it works
+
+* **Prometheus server** actively **pulls (scrapes)** metrics
+* Targets (Spring Boot apps, Kubernetes pods, nodes) **expose an HTTP endpoint**
+* Prometheus periodically calls that endpoint
+
+Example:
+
+```
+Prometheus  ──HTTP GET──>  /actuator/prometheus
+```
+
+### In your Spring Boot + Kubernetes setup:
+
+1. Spring Boot exposes metrics at:
+
+   ```
+   /actuator/prometheus
+   ```
+2. Kubernetes tells Prometheus *where* services are
+3. Prometheus **scrapes every X seconds** (e.g., every 15s)
+4. Metrics are stored as time-series data
+
+This is why you **do not push metrics** from your app.
+
+---
+
+## Why Prometheus Uses Pull (Important Reasons)
+
+### 1. Service Discovery (Perfect for Kubernetes)
+
+* Pods come and go dynamically
+* Prometheus asks Kubernetes:
+
+  > “What services exist right now?”
+* Automatically starts/stops scraping pods
+
+No manual configuration per instance.
+
+---
+
+### 2. Reliability & Control
+
+Prometheus controls:
+
+* Scrape frequency
+* Timeouts
+* Retries
+
+If a service is down:
+
+* Prometheus records a **missed scrape**
+* You can alert on it
+
+With push systems, failures can be silent.
+
+---
+
+### 3. Consistency & Debugging
+
+You can open a browser and hit:
+
+```
+http://pod-ip:8080/actuator/prometheus
+```
+
+and see exactly what Prometheus sees.
+
+---
+
+## The Exception: **Pushgateway** ⚠️
+
+Prometheus has a **Pushgateway**, but:
+
+> It is **NOT for long-running services**
+
+### When Pushgateway is used
+
+* Short-lived jobs
+* Batch jobs
+* CronJobs
+* CI/CD pipelines
+
+Example:
+
+* Kubernetes Job runs for 30 seconds
+* It finishes before Prometheus can scrape
+* The job **pushes metrics** to Pushgateway
+* Prometheus then **pulls from Pushgateway**
+
+### Flow:
+
+```
+Job → Pushgateway ← Prometheus
+```
+
+Even here, Prometheus is still pulling.
+
+---
+
+## Summary Table
+
+| Aspect          | Prometheus                  |
+| --------------- | --------------------------- |
+| Model           | **Pull-based**              |
+| Scrapes         | HTTP endpoints              |
+| Best for        | Kubernetes, microservices   |
+| Push supported? | ❌ Not directly              |
+| Pushgateway     | ✅ Only for short-lived jobs |
+
+---
+
+## One-Line Answer
+
+> **Prometheus is pull-based**, with a limited push option via **Pushgateway for short-lived jobs only**.
+
+If you want, I can compare:
+
+* Prometheus vs **Datadog / New Relic (push-based)**
+* Pull vs push tradeoffs in **real production systems**
+* How **Prometheus scraping works internally**
+
+Just let me know 👍
